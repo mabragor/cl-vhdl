@@ -2,6 +2,7 @@
 (in-package #:cl-vhdl)
 
 (enable-read-macro-tokens)
+(cl-interpol:enable-interpol-syntax)
 
 (defparameter *vhdl-version* nil)
 
@@ -244,5 +245,44 @@
 
 (define-vhdl-rule vhdl-string ()
   (text (progm #\" (times string-char) #\")))
+
+(defun binary-char-p (x)
+  (find x '(#\0 #\1) :test #'char=))
+
+(defun octal-char-p (x)
+  (find x '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7) :test #'char=))
+
+(defun hex-char-p (x)
+  (let ((code (char-code x)))
+    (or (and (<= 48 code) (<= code 57))
+	(and (<= 97 code) (<= code 102))
+	(and (<= 65 code) (<= code 70)))))
+
+(define-vhdl-rule simple-binary-string ()
+  (let* ((radix (|| (progn (|| #\b #\B) 2)
+		    (progn (|| #\o #\O) 8)
+		    (progn (|| #\x #\X) 16))))
+    (macrolet ((handle-radix (radix name log)
+		 `(when (equal ,radix radix)
+		    ;; TODO : Some syntax sugar for such cases (name mangling) should clearly be introduced
+		    (when (not (,(intern #?"$(name)-CHAR-P") char))
+		      (fail-parse-format ,#?"Binary string with radix $(radix) contains non-$((string-downcase name)) char ~a" char))
+		    (appending (coerce (format nil (literal-string ,#?"~$(log),'0b")
+					       (parse-integer (string char) :radix ,radix))
+				       'list)))))
+      (let ((it (iter (for char in-string (progm #\" hex-digit-string #\"))
+		      (handle-radix 2 binary 1)
+		      (handle-radix 8 octal 3)
+		      (handle-radix 16 hex 4))))
+	`(:bin ,(text it))))))
+		 
+
+(define-vhdl-rule binary-string ()
+  (if (and *vhdl-version* (< *vhdl-version* 2008))
+      simple-binary-string
+      convolved-binary-string))
       
-      
+
+
+
+    

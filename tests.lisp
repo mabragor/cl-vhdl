@@ -78,3 +78,10 @@
     (frob "A string in a string: \"A string\". "
 	  "\"A string in a string: \"\"A string\"\". \"")))
 	  
+
+(test simple-binary-string
+  (macrolet ((frob (x y) `(is (equal ',x (vhdl-parse 'simple-binary-string ,y)))))
+    (frob (:bin "011111010") "O\"372\"")
+    (frob (:bin "000000") "o\"00\"")
+    (frob (:bin "11111010") "X\"FA\"")
+    (frob (:bin "00001101") "x\"0d\"")))
