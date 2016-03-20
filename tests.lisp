@@ -85,3 +85,30 @@
     (frob (:bin "000000") "o\"00\"")
     (frob (:bin "11111010") "X\"FA\"")
     (frob (:bin "00001101") "x\"0d\"")))
+
+(test convolved-binary-string-unknown
+  (macrolet ((frob (x y) `(is (equal ',x (vhdl-parse 'convolved-binary-string ,y)))))
+    (frob (:bin "011XXXZZZ100") "O\"3XZ4\"")
+    (frob (:bin "10100011--------") "X\"A3--\"")
+    (frob (:bin "0000####????1111") "X\"0#?F\"")
+    (frob (:bin "00UU") "B\"00UU\"")
+    (frob (:bin "011XXX") "O\"3_X\"")
+    (signals (error) (vhdl-parse 'convolved-binary-string "D\"23Z9\""))))
+
+(test convolved-binary-string-explicit-length
+  (macrolet ((frob (x y) `(is (equal ',x (vhdl-parse 'convolved-binary-string ,y)))))
+    (frob (:bin "0111100") "7X\"3C\"")
+    (frob (:bin "00000101") "8O\"5\"")
+    (frob (:bin "000000000X") "10B\"X\"")
+    (signals (error) (vhdl-parse 'convolved-binary-string "8X\"90\"F"))))
+
+(test convolved-binary-string-signed
+  (macrolet ((frob (x y) `(is (equal ',x (vhdl-parse 'convolved-binary-string ,y)))))
+    (frob (:bin "0001110001") "10SX\"71\"")
+    (frob (:bin "1110001000") "10SX\"88\"")
+    (frob (:bin "WWWWWW0000") "10SX\"W0\"")
+    (frob (:bin "010110") "6SX\"16\"")
+    (frob (:bin "101000") "6SX\"E8\"")
+    (frob (:bin "HH0011") "6SX\"H3\"")
+    (signals (error) (vhdl-parse 'convolved-binary-string "6SX\"28\""))
+    (frob (:bin "101000") "6SX\"E8\"")))
