@@ -106,4 +106,35 @@
 	   ...
 	   (wait)))
 
-	  
+(define-ebnf-rule variable-assignment
+    (target ":=" expression ";")
+  (target expression))
+
+(define-ebnf-rule function-call
+    (name [ "(" association-list ")" ])
+  (name association-list))
+
+(define-ebnf-rule process-statement
+    ('process 'is { process-declarative-item }
+	      'begin { sequential-statement }
+	      'end 'process ";")
+  (process-declarative-items sequential-statements)) ;; automatical plural form
+
+(define-ebnf-rule case-statement
+    (CASE expression IS case-statement-alternative { ... } ; clearly, I need a special reader for this
+	  END CASE ";")
+  (...))
+
+(define-ebnf-rule identifier-list
+    identifier { , ... })
+
+(define-ebnf-rule mode
+    IN | OUT | INOUT)
+
+(define-ebnf-rule term "factor { ( * | / | MOD | REM ) factor }" ; OK, that's a lame way, but, apparently,
+  ; EBNF syntax is very different from Lisp, and I'm too lazy to invent a lispy one for this
+  ...)
+
+
+
+    
