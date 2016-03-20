@@ -1,5 +1,6 @@
 ;;;; package.lisp
 
 (defpackage #:cl-vhdl
-  (:use #:cl))
+  (:use #:cl #:esrap-liquid #:defmacro-enhance #:cl-read-macro-tokens)
+  (:export #:vhdl-parse))
 
