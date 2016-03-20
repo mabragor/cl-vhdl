@@ -23,3 +23,10 @@
   (is (equal '((:comment " asdf *a ") 13)
 	     (multiple-value-list (vhdl-parse 'multi-line-comment "/* asdf *a */ " :junk-allowed t)))))
 
+(test reserved-words
+  (is (equal 'cl-vhdl::default (let ((*vhdl-version* nil)) (vhdl-parse 'reserved-word "default"))))
+  (is (equal :caboom!
+	     (handler-case (let ((*vhdl-version* 87)) (vhdl-parse 'reserved-word "default"))
+	       (esrap-liquid::esrap-error () :caboom!)))))
+
+
