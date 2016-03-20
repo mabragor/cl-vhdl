@@ -168,6 +168,14 @@
 	 (rest (times (progn #\_ hex-digit-elt-string))))
     (text first rest)))
 
+(define-vhdl-rule generic-digit-elt-string ()
+  (postimes (!! (|| #\_ #\newline #\return #\"))))
+
+(define-vhdl-rule generic-digit-string ()
+  (let* ((first generic-digit-elt-string)
+	 (rest (times (progn #\_ generic-digit-elt-string))))
+    (text first rest)))
+
 (define-vhdl-rule sign ()
   (|| #\+ #\-))
 
@@ -258,24 +266,78 @@
 	(and (<= 97 code) (<= code 102))
 	(and (<= 65 code) (<= code 70)))))
 
+(defun convert-to-binary-string (str init-radix &optional expand-unknown-chars)
+  (macrolet ((handle-radix (radix name)
+	       `(when (equal ,radix init-radix)
+		  ;; TODO : Some syntax sugar for such cases (name mangling) should clearly be introduced
+		  (cond ((,(intern #?"$(name)-CHAR-P") char)
+			 (appending (coerce (format nil ,#?"~$((floor (log radix 2))),'0b"
+						    (parse-integer (string char) :radix ,radix))
+					    'list)))
+			(expand-unknown-chars
+			 (appending (make-list ,(floor (log radix 2)) :initial-element char)))
+			(t (fail-parse-format ,#?"Binary string with radix $(radix) contains non-$((string-downcase name)) char ~a" char))))))
+    (text (iter (for char in-string str)
+		(handle-radix 2 binary)
+		(handle-radix 8 octal)
+		(handle-radix 16 hex)))))
+
 (define-vhdl-rule simple-binary-string ()
   (let* ((radix (|| (progn (|| #\b #\B) 2)
 		    (progn (|| #\o #\O) 8)
 		    (progn (|| #\x #\X) 16))))
-    (macrolet ((handle-radix (radix name log)
-		 `(when (equal ,radix radix)
-		    ;; TODO : Some syntax sugar for such cases (name mangling) should clearly be introduced
-		    (when (not (,(intern #?"$(name)-CHAR-P") char))
-		      (fail-parse-format ,#?"Binary string with radix $(radix) contains non-$((string-downcase name)) char ~a" char))
-		    (appending (coerce (format nil (literal-string ,#?"~$(log),'0b")
-					       (parse-integer (string char) :radix ,radix))
-				       'list)))))
-      (let ((it (iter (for char in-string (progm #\" hex-digit-string #\"))
-		      (handle-radix 2 binary 1)
-		      (handle-radix 8 octal 3)
-		      (handle-radix 16 hex 4))))
-	`(:bin ,(text it))))))
-		 
+    `(:bin ,(convert-to-binary-string (progm #\" hex-digit-string #\")
+				      radix))))
+
+(define-vhdl-rule decimal-binary-string (explicit-length)
+  (let ((it (format nil "~d" (parse-integer (progm #\" dec-digit-string #\")))))
+    (cond ((not explicit-length) it)
+	  ((> (length it) explicit-length) (fail-parse "Can't truncate decimal binary string"))
+	  (t (concatenate 'string
+			  (make-string (- explicit-length (length it)) :initial-element (literal-char #\0))
+			  it)))))
+
+(define-vhdl-rule %convolved-binary-string (radix explicit-length signed-p)
+  (let ((it (convert-to-binary-string (progm #\" generic-digit-string #\") radix t)))
+    `(:bin ,(cond ((not explicit-length) it)
+		  ((> explicit-length (length it))
+		   (concatenate 'string
+				(make-string (- explicit-length (length it))
+					     :initial-element (if (not signed-p)
+								  (literal-char #\0)
+								  (char it 0)))
+				it))
+		  ((< explicit-length (length it))
+		   ;; (format t (literal-string "Truncating ~a to ~a~%") it explicit-length)
+		   (let ((minus (subseq it 0 (- (length it) explicit-length)))
+			 (rest (subseq it (- (length it) explicit-length))))
+		     ;; (format t (literal-string "~a ~a~%") minus rest)
+		     (if (not (string= minus
+				       (make-string (- (length it) explicit-length)
+						    :initial-element (if (not signed-p)
+									 (literal-char #\0)
+									 (char rest 0)))))
+			 (progn ;; (format t (literal-string "I'm here~%"))
+				(fail-parse-format "Piece to truncate '~a' is not multiple of chars ~a"
+						   minus
+						   (char rest 0)))
+			 (progn ;; (format t (literal-string "I'm there~%"))
+				rest))))
+		  (t it)))))
+    
+(define-vhdl-rule convolved-binary-string ()
+  (let* ((explicit-length (let ((it (? dec-digit-string)))
+			    (if it
+				(parse-integer it)))))
+    ;; TODO : this is really ugly way to do this dispatching -- I should have case-insensitive
+    (|| (progn (|| #\d #\D) (descend-with-rule 'decimal-binary-string explicit-length))
+	(progn (|| #\b #\B "UB" "uB" "Ub" "ub") (descend-with-rule '%convolved-binary-string 2 explicit-length nil))
+	(progn (|| "SB" "sB" "Sb" "sb") (descend-with-rule '%convolved-binary-string 2 explicit-length t))
+	(progn (|| #\o #\O "UO" "uO" "Uo" "uo") (descend-with-rule '%convolved-binary-string 8 explicit-length nil))
+	(progn (|| "SO" "sO" "So" "so") (descend-with-rule '%convolved-binary-string 8 explicit-length t))
+	(progn (|| #\x #\X "UX" "uX" "Ux" "ux") (descend-with-rule '%convolved-binary-string 16 explicit-length nil))
+	(progn (|| "SX" "sX" "Sx" "sx") (descend-with-rule '%convolved-binary-string 16 explicit-length t)))))
+	
 
 (define-vhdl-rule binary-string ()
   (if (and *vhdl-version* (< *vhdl-version* 2008))
