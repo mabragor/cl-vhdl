@@ -138,3 +138,101 @@
 	  (finally (fail-parse "Not a reserved word")))))
 	  
 			      
+(define-vhdl-rule special-symbol ()
+  (|| one-letter-special-symbol
+      multi-letter-special-symbol))
+
+(define-vhdl-rule one-letter-special-symbol ()
+  (|| #\" #\# #\& #\' #\( #\) #\* #\+ #\- #\, #\. #\/ #\: #\; #\< #\= #\> #\? #\@ #\[ #\] #\` #\|))
+
+(define-vhdl-rule multi-letter-special-symbol ()
+  ;; TODO : I don't know what Lisp representation to pick for these symbols actually...
+  (|| "=>" "**" ":=" "/=" ">=" "<=" "<>" "??" "?=" "?/=" "?>" "?<" "?>=" "?<=" "<<" ">>"))
+
+
+
+(define-vhdl-rule dec-digit-elt-string ()
+  (postimes (character-ranges (#\0 #\9))))
+
+(define-vhdl-rule hex-digit-elt-string ()
+  (postimes (character-ranges (#\0 #\9) (#\a #\f) (#\A #\F))))
+
+(define-vhdl-rule dec-digit-string ()
+  (let* ((first dec-digit-elt-string)
+	 (rest (times (progn #\_ dec-digit-elt-string))))
+    (text first rest)))
+
+(define-vhdl-rule hex-digit-string ()
+  (let* ((first hex-digit-elt-string)
+	 (rest (times (progn #\_ hex-digit-elt-string))))
+    (text first rest)))
+
+(define-vhdl-rule sign ()
+  (|| #\+ #\-))
+
+(define-vhdl-rule exponent ()
+  (|| #\e #\E)
+  (let* ((sign (? sign))
+	 (str dec-digit-string))
+    (parse-integer (text sign str))))
+
+(define-vhdl-rule integer-dec-number-literal ()
+  (let* ((str dec-digit-string)
+	 (expt (? exponent)))
+    (cond ((not expt) (parse-integer str))
+	  ((< expt 0) (fail-parse "Exponent of an integer literal can't be negative"))
+	  (t (* (parse-integer str) (expt 10 expt))))))
+
+;; TODO : maybe Lisp's infinite precision works again me here -- introducing subtle rounding errors
+(define-vhdl-rule real-dec-number-literal ()
+  (let* ((int dec-digit-string)
+	 (rem (progn #\. dec-digit-string))
+	 (expt (? exponent))
+	 (base (float (+ (parse-integer int)
+			 (* (expt 10 (- (length rem)))
+			    (parse-integer rem))))))
+    (if (not expt)
+	base
+	(float (* base (expt 10 expt))))))
+
+
+(define-vhdl-rule dec-number-literal ()
+  (most-full-parse integer-dec-number-literal
+		   real-dec-number-literal))
+
+(define-vhdl-rule number-literal ()
+  (most-full-parse dec-number-literal
+		   explicit-base-number-literal))
+
+(define-vhdl-rule explicit-base-meat (base)
+  (most-full-parse (descend-with-rule 'explicit-base-meat-integer base)
+		   (descend-with-rule 'explicit-base-meat-real base)))
+
+(define-vhdl-rule explicit-base-meat-integer (base)
+  ;; TODO : check that actually only symbols which are valid for this base, are in the string
+  (parse-integer hex-digit-string :radix base))
+
+(define-vhdl-rule explicit-base-meat-real (base)
+  ;; TODO : check that actually only symbols which are valid for this base, are in the string
+  (let* ((int hex-digit-string)
+	 (rem (progn #\. hex-digit-string)))
+    (float (+ (parse-integer int :radix base)
+	      (* (expt base (- (length rem)))
+		 (parse-integer rem :radix base))))))
+
+(define-vhdl-rule explicit-base-number-literal ()
+  (let ((base (parse-integer dec-digit-string)))
+    (declare (special base))
+    (if (or (< base 2) (> base 16))
+	(fail-parse-format "Explicit base should be between 2 and 16, but got ~a" base))
+    (let* ((meat (progm #\# (descend-with-rule 'explicit-base-meat base) #\#))
+	   (expt (? exponent)))
+      (if (not expt)
+	  meat
+	  (if (integerp meat)
+	      (if (< expt 0)
+		  (fail-parse-format "Exponent for integer literal should be >= 0, but got ~a" expt)
+		  (* meat (expt base expt)))
+	      (float (* meat (expt base expt))))))))
+      
+      
