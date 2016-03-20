@@ -60,3 +60,21 @@
     (frob 3.1415926 "3.141_592_6")
     (frob 64512 "2#1111_1100_0000_0000#")))
 
+(test character
+  (macrolet ((frob (x y) `(is (equal ',x (vhdl-parse 'vhdl-char ,y)))))
+    (frob #\A "'A'")
+    (frob #\z "'z'")
+    (frob #\, "','")
+    (frob #\' "'''")
+    (frob #\space "' '")))
+  
+(test string
+  (macrolet ((frob (x y) `(is (equal ',x (vhdl-parse 'vhdl-string ,y)))))
+    (frob "A string" "\"A string\"")
+    (frob "A string can include any printing characters (e.g., &%@^*)."
+	  "\"A string can include any printing characters (e.g., &%@^*).\"")
+    (frob "00001111ZZZZ" "\"00001111ZZZZ\"")
+    (frob "" "\"\"")
+    (frob "A string in a string: \"A string\". "
+	  "\"A string in a string: \"\"A string\"\". \"")))
+	  

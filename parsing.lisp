@@ -234,5 +234,15 @@
 		  (fail-parse-format "Exponent for integer literal should be >= 0, but got ~a" expt)
 		  (* meat (expt base expt)))
 	      (float (* meat (expt base expt))))))))
+
+(define-vhdl-rule vhdl-char ()
+  (progm #\' character #\'))
+
+(define-vhdl-rule string-char ()
+  (|| (progn #\" #\")
+      (!! (|| #\newline #\return #\"))))
+
+(define-vhdl-rule vhdl-string ()
+  (text (progm #\" (times string-char) #\")))
       
       
