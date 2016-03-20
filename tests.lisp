@@ -19,7 +19,7 @@
       (error "Tests failed."))))
 
 (test whitespace
-  (is (equal #\space (vhdl-parse 'one-line-comment "-- asdf")))
-  (is (equal '(#\space 13)
+  (is (equal '(:comment " asdf") (vhdl-parse 'one-line-comment "-- asdf")))
+  (is (equal '((:comment " asdf *a ") 13)
 	     (multiple-value-list (vhdl-parse 'multi-line-comment "/* asdf *a */ " :junk-allowed t)))))
 

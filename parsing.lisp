@@ -6,13 +6,13 @@
 
 (define-vhdl-rule one-line-comment ()
   ;; TODO : maybe a bug with unused NREVERSE
-  "--" (times (!! (|| #\newline #\return)))
-  (literal-char #\space))
+  "--" `(:comment ,(text (times (!! (|| #\newline #\return))))))
 
 (define-vhdl-rule multi-line-comment ()
   ;; TODO : does !! allow multiple characters ?
-  "/*" (times (!! "*/")) "*/"
-  (literal-char #\space))
+  "/*" (let ((it (times (!! "*/"))))
+	 "*/"
+	 `(:comment ,(text it))))
 
 (define-vhdl-rule whitespace ()
   (postimes (|| #\space #\tab #\newline #\return
