@@ -353,6 +353,47 @@
   (declare (ignore syntax body))
   nil)
 
+(define-ebnf-aux-rule big-letter () (character-ranges (#\A #\Z)))
+(define-ebnf-aux-rule small-letter () (character-ranges (#\a #\z)))
+(define-ebnf-aux-rule digit () (character-ranges (#\0 #\9)))
+
+(define-ebnf-aux-rule big-word ()
+  (text (postimes big-letter)))
+
+(define-ebnf-aux-rule small-word ()
+  (text (postimes small-letter)))
+
+(define-ebnf-aux-rule kwd-token ()
+  (intern (prog1 big-word (& (|| #\space 'eof)))
+	  (literal-string "KEYWORD")))
+
+(defmacro!! define-plural-rule (name single delim) ()
+  `(define-ebnf-aux-rule ,name ()
+     (cons ,single
+	   (times (progn ,delim ,single)))))
+
+(define-plural-rule raw-rule-name small-word "-")
+(define-plural-rule raw-rule-advice big-word "-")
+
+(define-ebnf-aux-rule rule-name ()
+  (let* ((advice (? (prog1 raw-rule-advice "-")))
+	 (name (joinl (literal-string "-") raw-rule-name)))
+    `(,(intern (string-upcase (text name)))
+       ,@(if advice `(,(intern (joinl (literal-string "-") advice)
+			       (literal-string "KEYWORD")))))))
+
+(define-ebnf-aux-rule escape-chars ()
+  (|| (progn #\( #\() (progn #\) #\)) (progn #\[ #\[) (progn #\] #\]) (progn #\{ #\{) (progn #\} #\})
+      (progn #\| #\|) (progn #\. #\. #\. (text #\. #\. #\.))))
+      
+
+(define-ebnf-aux-rule new-in-version ()
+  (let* ((version (? (postimes digit))))
+    "_"
+    (if version
+	(parse-integer (text version))
+	t)))
+	 
 
 ;;; Design file
 

@@ -7,7 +7,8 @@
   :license "MIT"
   :serial t
   :depends-on (#:iterate #:cl-itertools #:defmacro-enhance
-			 #:quasiquote-2.0 #:cl-interpol #:esrap-liquid #:lol-re)
+			 #:quasiquote-2.0 #:cl-interpol #:esrap-liquid #:lol-re
+			 #:cg-common-ground)
   :components ((:file "package")
 	       (:file "parsing-macro")
 	       (:file "parsing")
