@@ -376,14 +376,18 @@
 
 ;;; Library unit declarations
 
+;; Grammar uses the following delimiters: (), {}, [], and | and also triple-dot symbol ...
+;; But sometimes actual syntax contains these symbols.
+;; In these cases we escape them by ((, )), {{, }}, [[, ]], || and ......
+
 ;; Let's for now stick to convention that grouping brackets of grammar would be (( and ))
 
 ;; In general CAPSed names in the beginning denote italicized extra info
 ;; (I need to figure out how to actually use it)
 
 (define-ebnf-rule entity-declaration ("ENTITY identifier IS"
-				      "   [ GENERIC ( GENERIC-interface-list ) ; ]"
-				      "   [ PORT ( PORT-interface-list ) ; ]"
+				      "   [ GENERIC (( GENERIC-interface-list )) ; ]"
+				      "   [ PORT (( PORT-interface-list )) ; ]"
 				      "   { entity-declarative-item }"
 				      "[ BEGIN"
 				      "   { concurrent-assertion-statement"
@@ -417,10 +421,10 @@
 					     "   block-configuration"
 					     "END [ CONFIGURATION ] [ identifier ] ;"))
 
-(define-ebnf-rule block-configuration ("FOR (( ARCHITECTURE-name | BLOCK-STATEMENT-label"
+(define-ebnf-rule block-configuration ("FOR ( ARCHITECTURE-name | BLOCK-STATEMENT-label"
 				       "       | GENERATE-STATEMENT-label"
-				       "         [ ( (( STATIC-discrete-range | STATIC-expression"
-				       "                | _ALTERNATIVE-label )) ) ] ))"
+				       "         [ (( ( STATIC-discrete-range | STATIC-expression"
+				       "                | _ALTERNATIVE-label ) )) ] ))"
 				       "END FOR ;"))
 
 (define-ebnf-rule component-configuration ("FOR component-specification"
@@ -437,8 +441,8 @@
 ;;; Declarations and Specifications
 
 (define-ebnf-rule package-declaration ("PACKAGE identifier IS"
-				       "    [ GENERIC ( GENERIC-interface-list ) ;"
-				       "      [ GENERIC MAP ( GENERIC-association-list ) ; ] ]"
+				       "    [ GENERIC (( GENERIC-interface-list )) ;"
+				       "      [ GENERIC MAP (( GENERIC-association-list )) ; ] ]"
 				       "    { package-declarative-item }"
 				       "END [ PACKAGE ] [ identifier ] ;"))
 
@@ -468,19 +472,19 @@
 						 "| use-clause | group-template-declaration | group-declaration"))
 
 (define-ebnf-rule _package-instantiation-declaration ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
-						      "    [ GENERIC MAP ( GENERIC-association-list ) ] ;"))
+						      "    [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
 
 (define-ebnf-rule subprogram-specification "procedure-specification | function-specification")
 
 (define-ebnf-rule procedure-specification ("PROCEDURE identifier"
-					   "    [ GENERIC ( GENERIC-interface-list )"
-					   "      [ GENERIC MAP ( GENERIC-association-list ) ] ]"
-					   "    [ [ PARAMETER ] ( PARAMETER-interface-list ) ]"))
+					   "    [ GENERIC (( GENERIC-interface-list ))"
+					   "      [ GENERIC MAP (( GENERIC-association-list )) ] ]"
+					   "    [ [ PARAMETER ] (( PARAMETER-interface-list )) ]"))
 
-(define-ebnf-rule function-specification ("[ PURE | IMPURE ] FUNCTION (( identifier | operator-symbol ))"
-					  "    [ GENERIC ( GENERIC-interface-list )"
-					  "      [ GENERIC MAP ( GENERIC-association-list ) ] ]"
-					  "    [ [ PARAMETER ] ( PARAMETER-interface-list ) ] RETURN type-mark"))
+(define-ebnf-rule function-specification ("[ PURE | IMPURE ] FUNCTION ( identifier | operator-symbol )"
+					  "    [ GENERIC (( GENERIC-interface-list ))"
+					  "      [ GENERIC MAP (( GENERIC-association-list )) ] ]"
+					  "    [ [ PARAMETER ] (( PARAMETER-interface-list )) ] RETURN type-mark"))
 
 (define-ebnf-rule subprogram-declaration "subprogram-specification ;")
 
@@ -499,9 +503,9 @@
 					       "| attribute-declaration | attribute-specification"
 					       "| use-clause | group-template-declaration | group-declaration"))
 
-(define-ebnf-rule _subprogram-instantiation-declaration ("(( PROCEDURE | FUNCTION )) identifier IS"
+(define-ebnf-rule _subprogram-instantiation-declaration ("( PROCEDURE | FUNCTION ) identifier IS"
 							 "    NEW UNINSTANTIATED-SUBPROGRAM-name [ signature ]"
-							 "        [ GENERIC MAP ( GENERIC-association-list ) ] ;"))
+							 "        [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
 
 (define-ebnf-rule type-declaration ("TYPE identifier IS type-definition ;"
 				    "| TYPE identifier ; "))
@@ -523,19 +527,19 @@
 (define-ebnf-rule file-declaration ("FILE identifier {, ... } : subtype-indication"
 				    "    [ [ OPEN FILE-OPEN-KIND-expression ] IS STRING-expression ] ;"))
 
-(define-ebnf-rule alias-declaration ("ALIAS (( identifier | character-literal | operator-symbol ))"
+(define-ebnf-rule alias-declaration ("ALIAS ( identifier | character-literal | operator-symbol )"
 				     "    [ : subtype-indication | IS name [ signature ] ;"))
 
 (define-ebnf-rule component-declaration ("COMPONENT identifier [ IS ]"
-					 "    [ GENERIC ( GENERIC-interface-list ) ; ]"
-					 "    [ PORT ( PORT-interface-list ) ; ]"
+					 "    [ GENERIC (( GENERIC-interface-list )) ; ]"
+					 "    [ PORT (( PORT-interface-list )) ; ]"
 					 "END COMPONENT [ identifier ] ;"))
 
 (define-ebnf-rule attribute-declaration "ATTRIBUTE identifier | type-mark ;")
 
 (define-ebnf-rule attribute-specification "ATTRIBUTE identifier OF entity-name-list | entity-class IS expression ;")
 
-(define-ebnf-rule entity-name-list ("(( (( identifier | character-literal | operator-symbol ))[ signature ])){, ...}"
+(define-ebnf-rule entity-name-list ("( ( identifier | character-literal | operator-symbol )[ signature ]){, ...}"
 				    "| OTHERS | ALL"))
 
 (define-ebnf-rule entity-class ("ENTITY | ARCHITECTURE | CONFIGURATION | PACKAGE | PROCEDURE | FUNCTION"
@@ -546,43 +550,43 @@
 					       "    { USE VUNIT VERIFICATION-UNIT-name {, ... } ; }"
 					       "[ END FOR ; ]"))
 
-(define-ebnf-rule component-specification "(( INSTANTIATION-label {, ...} | OTHERS | ALL )) : COMPONENT-name")
+(define-ebnf-rule component-specification "( INSTANTIATION-label {, ...} | OTHERS | ALL ) : COMPONENT-name")
 
-(define-ebnf-rule binding-indication ("USE (( ENTITY ENTITY-name [ ( ARCHITECTURE-identifier ) ]"
-				      "       | CONFIGURATION CONFIGURATION-name | OPEN ))"
-				      "[ GENERIC MAP ( GENERIC-association-list ) ]"
-				      "[ PORT MAP ( PORT-association-list ) ]"))
+(define-ebnf-rule binding-indication ("USE ( ENTITY ENTITY-name [ (( ARCHITECTURE-identifier )) ]"
+				      "       | CONFIGURATION CONFIGURATION-name | OPEN )"
+				      "[ GENERIC MAP (( GENERIC-association-list )) ]"
+				      "[ PORT MAP (( PORT-association-list )) ]"))
 
-(define-ebnf-rule disconnection-specification ("DISCONNECT (( SIGNAL-name {, ...} | OTHERS | ALL )) : type-mark"
+(define-ebnf-rule disconnection-specification ("DISCONNECT ( SIGNAL-name {, ...} | OTHERS | ALL ) : type-mark"
 					       "    AFTER TIME-expression ;"))
 
-(define-ebnf-rule group-template-declaration "GROUP identifier IS ( (( entity-class [ <> ] )) {, ...} ) ;")
+(define-ebnf-rule group-template-declaration "GROUP identifier IS (( ( entity-class [ <> ] ) {, ...} )) ;")
 
 (define-ebnf-rule group-declaration
-  "GROUP identifier : GROUP-TEMPLATE-name ( (( name | character-literal )) {, ...} ) ;")
+  "GROUP identifier : GROUP-TEMPLATE-name (( ( name | character-literal ) {, ...} )) ;")
 
 (define-ebnf-rule use-clause "USE selected-name {, ...} ;")
 
 
 ;;; Type Declarations
 
-(define-ebnf-rule enumeration-type-definition "( (( identifier | character-literal )) {, ...} )")
+(define-ebnf-rule enumeration-type-definition "(( ( identifier | character-literal ) {, ...} ))")
 
-(define-ebnf-rule integer-type-definition ("RANGE (( RANGE-attribute-name"
-					   "        | simple-expression (( TO | DOWNTO )) simple-expression ))"))
+(define-ebnf-rule integer-type-definition ("RANGE ( RANGE-attribute-name"
+					   "        | simple-expression ( TO | DOWNTO ) simple-expression )"))
 
-(define-ebnf-rule floating-type-definition ("RANGE (( RANGE-attribute-name"
-					    "        | simple-expression (( TO | DOWNTO )) simple-expression ))"))
+(define-ebnf-rule floating-type-definition ("RANGE ( RANGE-attribute-name"
+					    "        | simple-expression ( TO | DOWNTO ) simple-expression )"))
 
-(define-ebnf-rule physical-type-definition ("RANGE (( RANGE-attribute-name"
-					    "        | simple-expression (( TO | DOWNTO )) simple-expression ))"
+(define-ebnf-rule physical-type-definition ("RANGE ( RANGE-attribute-name"
+					    "        | simple-expression ( TO | DOWNTO ) simple-expression )"
 					    "   UNITS identifier { identifier = physical-literal ; }"
 					    "   END UNITS [ identifier ]"))
 
-(define-ebnf-rule array-type-definition ("ARRAY ( (( type-mark RANGE <> )) {, ...} ) OF ELEMENT-subtype-indication"
-					 "| ARRAY ( discrete-range {, ...} ) OF ELEMENT-subtype-indication"))
+(define-ebnf-rule array-type-definition ("ARRAY (( ( type-mark RANGE <> ) {, ...} )) OF ELEMENT-subtype-indication"
+					 "| ARRAY (( discrete-range {, ...} )) OF ELEMENT-subtype-indication"))
 
-(define-ebnf-rule record-type-definition ("RECORD (( identifier {, ...} : subtype-indication ; )) { ... }"
+(define-ebnf-rule record-type-definition ("RECORD ( identifier {, ...} : subtype-indication ; ) { ... }"
 					  "END RECORD [ identifier ]"))
 
 (define-ebnf-rule access-type-definition "ACCESS subtype-indication")
@@ -614,21 +618,21 @@
 (define-ebnf-rule subtype-indication "[ resolution-indication ] type-mark [ constant ]")
 
 ;; This _( is interesting -- I wonder, how I would parse it
-(define-ebnf-rule resolution-indication ("RESOLUTION-FUNCTION-name | _( _resolution-indication"
-					 "| (( _RECORD-ELEMENT-identifier resolution-indication )) {, ...} )"))
+(define-ebnf-rule resolution-indication ("RESOLUTION-FUNCTION-name | _(( _resolution-indication"
+					 "| ( _RECORD-ELEMENT-identifier resolution-indication ) {, ...} ))"))
 
 (define-ebnf-rule constraint
-  ("RANGE (( RANGE-attribute-name | simple-expression (( TO | DOWNTO )) simple-expression ))"
+  ("RANGE ( RANGE-attribute-name | simple-expression ( TO | DOWNTO ) simple-expression )"
    "| array-constraint | _record-constraint"))
 
-(define-ebnf-rule array-constraint ("( discrete-range {, ... } ) [ array-constraint | record-constraint ]"
-				    "| ( OPEN ) [ array-constraint | record-constraint ]"))
+(define-ebnf-rule array-constraint ("(( discrete-range {, ... } )) [ array-constraint | record-constraint ]"
+				    "| (( OPEN )) [ array-constraint | record-constraint ]"))
 
 (define-ebnf-rule record-constraint
-  "( (( RECORD-ELEMENT-identifier (( array-constraint | record-constrant )) )) {, ... } )")
+  "(( ( RECORD-ELEMENT-identifier ( array-constraint | record-constrant ) ) {, ... } ))")
 
 (define-ebnf-rule discrete-range
-  "DISCRETE-subtype-indication | RANGE-attribute-name | simple-expression (( TO | DOWNTO )) simple-expression")
+  "DISCRETE-subtype-indication | RANGE-attribute-name | simple-expression ( TO | DOWNTO ) simple-expression")
 
 (define-ebnf-rule type-mark "TYPE-name | SUBTYPE-name")
 
@@ -640,11 +644,11 @@
    "| concurrent-signal-assignment-statement | component-instantiation-statement | generate-statement"
    "| PSL-psl-directive"))
 
-(define-ebnf-rule block-statement ("BLOCK-label : BLOCK [ (GUARD-expression) ] [ IS ]"
-				   "    [ GENERIC ( GENERIC-interface-list ) ;"
-				   "    [ GENERIC MAP ( GENERIC-association-list ) ; ] ]"
-				   "    [ PORT ( PORT-interface-list ) ;"
-				   "      [ PORT MAP ( PORT-association-list ) ; ] ]"
+(define-ebnf-rule block-statement ("BLOCK-label : BLOCK [ (( GUARD-expression )) ] [ IS ]"
+				   "    [ GENERIC (( GENERIC-interface-list )) ;"
+				   "    [ GENERIC MAP (( GENERIC-association-list )) ; ] ]"
+				   "    [ PORT (( PORT-interface-list )) ;"
+				   "      [ PORT MAP (( PORT-association-list )) ; ] ]"
 				   "    { block-declarative-item }"
 				   "BEGIN { concurrent-statement } END BLOCK [ BLOCK-label ] ;"))
 
@@ -661,7 +665,7 @@
 					  "| _PSL-sequence-declaration | _PSL-clock-declaration"))
 
 (define-ebnf-rule process-statement
-  ("[ PROCESS-label : ] [ POSTPONED ] PROCESS [ (( ( SIGNAL-name {, ...} ) | ALL )) ] [ IS ]"
+  ("[ PROCESS-label : ] [ POSTPONED ] PROCESS [ ( (( SIGNAL-name {, ...} )) | ALL ) ] [ IS ]"
    "    { process-declarative-item } BEGIN { sequential-statement } END [ POSTPONED ] PROCESS [ PROCESS-label ] ;"))
 
 (define-ebnf-rule process-declarative-item
@@ -672,7 +676,7 @@
    "| group-template-declaration | group-declaration"))
 
 (define-ebnf-rule concurrent-procedure-call-statement
-  "[ label : ] [ POSTPONED ] PROCEDURE-name [ ( PARAMETER-association-list ) ] ;")
+  "[ label : ] [ POSTPONED ] PROCEDURE-name [ (( PARAMETER-association-list )) ] ;")
 
 (define-ebnf-rule concurrent-assertion-statement
   "[ label : ] [ POSTPONED ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;")
@@ -692,9 +696,9 @@
    "    { waveform WHEN choices , } waveform WHEN choices ;"))
 
 (define-ebnf-rule component-instantiation-statement
-  ("INSTANTIATION-label : (( [ COMPONENT ] COMPONENT-name | ENTITY ENTITY-name [ ( ARCHITECTURE-identifier ) ]"
-   "    | CONFIGURATION CONFIGURATION-name ))"
-   "    [ GENERIC MAP ( GENERIC-association-list ) ] [ PORT MAP ( PORT-association-list ) ] ;"))
+  ("INSTANTIATION-label : ( [ COMPONENT ] COMPONENT-name | ENTITY ENTITY-name [ (( ARCHITECTURE-identifier )) ]"
+   "    | CONFIGURATION CONFIGURATION-name )"
+   "    [ GENERIC MAP (( GENERIC-association-list )) ] [ PORT MAP (( PORT-association-list )) ] ;"))
 
 (define-ebnf-rule generate-statement ("for-generate-statement | if-generate-statement | _case-generate-statement"))
 
@@ -710,7 +714,7 @@
 
 (define-ebnf-rule _case-generate-statement
   ("GENERATE-label : CASE expression GENERATE"
-   "  (( WHEN [ ALTERNATIVE-label : ] choices => generate-statement-body )) { ... }"
+   "  ( WHEN [ ALTERNATIVE-label : ] choices => generate-statement-body ) { ... }"
    "END GENERATE [ GENERATE-label ] ;"))
 
 (define-ebnf-rule generate-statement-body
@@ -737,13 +741,13 @@
    "| [ label : ] selected-signal-assignment"))
 
 (define-ebnf-rule simple-signal-assignment
-  ("(( name | aggregate )) <= [ delay-mechanism ] waveform ;"
+  ("( name | aggregate ) <= [ delay-mechanism ] waveform ;"
    "| name <= FORCE [ IN | OUT ] expression ; | name <= RELEASE [ IN | OUT ] ;"))
 
 (define-ebnf-rule conditional-signal-assignment "conditional-waveform-assignment | conditional-force-assignment")
 
 (define-ebnf-rule conditional-waveform-assignement
-  ("[ label : ] (( name | aggregate )) <= [ delay-mechanism ] waveform WHEN condition"
+  ("[ label : ] ( name | aggregate ) <= [ delay-mechanism ] waveform WHEN condition"
    "{ ELSE waveform WHEN condition } [ ELSE waveform ] ;"))
 
 (define-ebnf-rule conditional-force-assignement
@@ -753,7 +757,7 @@
 (define-ebnf-rule selected-signal-assignment "selected-waveform-assignment | selected-force-assignment")
 
 (define-ebnf-rule selected-waveform-assignment
-  ("[ label : ] WITH expression SELECT [ ? ] (( name | aggregate )) <= [ delay-mechanism ]"
+  ("[ label : ] WITH expression SELECT [ ? ] ( name | aggregate ) <= [ delay-mechanism ]"
    "{ waveform WHEN choices , } waveform WHEN choices ;"))
 
 (define-ebnf-rule selected-signal-assignment
@@ -769,23 +773,23 @@
   ("[ label : ] simple-variable-assignment _| [ label : ] conditional-variable-assignment"
    "_| [ label : ] selected-variable-assignment"))
 
-(define-ebnf-rule simple-variable-assignment "(( name | aggregate )) := expression ;")
+(define-ebnf-rule simple-variable-assignment "( name | aggregate ) := expression ;")
 
 (define-ebnf-rule _conditional-variable-assignment
-  "(( name | aggregate )) := expression WHEN condition { ELSE expression WHEN condition } [ ELSE expression ] ;")
+  "( name | aggregate ) := expression WHEN condition { ELSE expression WHEN condition } [ ELSE expression ] ;")
 
 (define-ebnf-rule _selected-variable-assignment
-  ("WITH expression SELECT [ ? ] (( name | aggregate )) :="
+  ("WITH expression SELECT [ ? ] ( name | aggregate ) :="
    "{ expression WHEN choices , } expression WHEN choices ;"))
 
-(define-ebnf-rule procedure-call-statement "[ label : ] PROCEDURE-name [ ( PARAMETER-association-list ) ] ;")
+(define-ebnf-rule procedure-call-statement "[ label : ] PROCEDURE-name [ (( PARAMETER-association-list )) ] ;")
 
 (define-ebnf-rule if-statement
   ("[ IF-label : ] IF condition THEN { sequential-statement } { ELSIF condition THEN { sequential-statement } }"
    "[ ELSE { sequential-statement } ] END IF [ IF-label ] ;"))
 
 (define-ebnf-rule case-statement
-  ("[ CASE-label : ] CASE _[ ? ] expression IS (( WHEN choices => { sequential-statement } )) { ... }"
+  ("[ CASE-label : ] CASE _[ ? ] expression IS ( WHEN choices => { sequential-statement } ) { ... }"
    "END CASE _[ ? ] [ CASE-label ] ;"))
 
 (define-ebnf-rule loop-statement
@@ -802,3 +806,114 @@
 
 
 ;;; Interfaces and Associations
+
+(define-ebnf-rule interface-list
+  ("( interface-constant-declaration | interface-signal-declaration | interface-variable-declaration"
+   "   | interface-file-declaration | _interface-type-declaration | _interface-subprogram-declaration"
+   "   | _interface-package-declaration ) { ; ... }"))
+
+(define-ebnf-rule interface-constant-declaration
+  ("[ CONSTANT ] identifier {, ... } : [ IN ] subtype-indication [ := STATIC-expression ]"))
+
+(define-ebnf-rule interface-signal-declaration
+  ("[ SIGNAL ] identifier {, ... } : [ mode ] subtype-indication [ BUS ] [ := STATIC-expression ]"))
+
+(define-ebnf-rule interface-variable-declaration
+  ("[ VARIABLE ] identifier {, ... } : [ mode ] subtype-indication [ := STATIC-expression ]"))
+
+(define-ebnf-rule mode "IN | OUT | INOUT | BUFFER | LINKAGE")
+
+(define-ebnf-rule interface-file-declaration "FILE identifier {, ... } : subtype-indication")
+
+(define-ebnf-rule _interface-type-declaration "TYPE identifier")
+
+(define-ebnf-rule _interface-subprogram-declaration
+  ("( PROCEDURE identifier [ [ PARAMETER ] ( PARAMETER_interface_list ) ]"
+   "   | [ PURE | IMPURE ] FUNCTION (( identifier | operator-symbol ))"
+   "                       [ [ PARAMETER ] ( PARAMETER-interface-list ) ] RETURN type-mark )"
+   "[ IS ( SUBPROGRAM-name | <> ) ]"))
+
+(define-ebnf-rule _interface-package-declaration
+  ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
+   "GENERIC MAP (( ( GENERIC-association-list | <> | DEFAULT ) ))"))
+
+(define-ebnf-rule association-list "( [ format-part => ] actual-part ) {, ... }")
+
+(define-ebnf-rule formal-part
+  ("GENERIC-name | PORT-name | PARAMETER-name | FUNCTION-name (( ( GENERIC-name | PORT-name | PARAMETER-name ) ))"
+   "| type-mark (( ( GENERIC-name | PORT-name | PARAMETER-name ) ))"))
+
+(define-ebnf-rule actual-part
+  ("_[ INERTIAL ] expression | SIGNAL-name | VARIABLE-name | FILE-name | _subtype-indication"
+   "| _SUBPROGRAM-name | _PACKAGE-name | OPEN | FUNCTION-name (( ( SIGNAL-name | VARIABLE-name ) ))"
+   "| type-mark (( ( SIGNAL-name | VARIABLE-name ) ))"))
+
+
+;;; Expressions and Names
+
+(define-ebnf-rule condition "expression")
+
+(define-ebnf-rule expression "( ?? primary ) | logical-expression")
+
+(define-ebnf-rule logical-expression
+  ("relation { AND relation } | relation [ NAND relation ] | relation { OR relation }"
+   "| relation [ NOR relation ] | relation { XOR relation } | relation { XNOR relation }"))
+
+(define-ebnf-rule relation
+  "shift-expression [ ( = | /= | < | <= | > | >= | ?= | _?= | _?/= | _?< | _?<= | _?> | _?>= ) shift-expression ]")
+
+(define-ebnf-rule shift-expression
+  "simple-expression [ ( SLL | SRL | SLA | SRA | ROL | ROR ) simple-expression ]")
+
+(define-ebnf-rule simple-expression "[ + | - ] term { ( + | - | & ) term }")
+
+(define-ebnf-rule term "factor { ( * | / | MOD | REM ) factor }")
+
+(define-ebnf-rule factor
+  ("primary [ ** primary ] | ABS primary | NOT primary | AND primary | NAND primary | OR primary"
+   "| NOR primary | XOR primary | XNOR primary"))
+
+(define-ebnf-rule primary
+  ("name | literal | aggregate | function-call | qualified-expression | type-mark (( expression ))"
+   "| NEW subtype-indication | NEW qualified-expression | (( expression ))"))
+
+(define-ebnf-rule function-call "FUNCTION-name [ (( PARAMETER-association-list )) ]")
+
+(define-ebnf-rule qualified-expression "type-mark ' (( expression )) | type-mark ' aggregate")
+
+(define-ebnf-rule name
+  ("identifier | operator-symbol | character-literal | selected-name"
+   "| ( name | function-call ) (( expression {, ...} ))"
+   "| ( name | function-call ) (( discrete-range ))"
+   "| attribute-name | _external-name"))
+
+(define-ebnf-rule selected-name
+  "( name | function-call ) . ( identifier | character-literal | operator-symbol | ALL )")
+
+(define-ebnf-rule operator-symbol "{ graphic-character }")
+
+(define-ebnf-rule attribute-name
+  "( name | function-call ) [ signature ] ' identifier [ (( expression )) ]")
+
+;; Apparently, [[ and ]] should denote [ and ] in text
+(define-ebnf-rule signature
+  "[[ [ type-mark {, ... } ] [ RETURN type-mark ] ]]")
+
+(define-ebnf-rule _external-name
+  ("<< CONSTANT external-pathname : subtype-indication >>"
+   "| << SIGNAL external-pathname : subtype-indication >>"
+   "| << VARIABLE external-pathname : subtype-indication >>"))
+
+(define-ebnf-rule _external-pathname
+  "absolute-pathname | relative-pathname | package-pathname")
+
+(define-ebnf-rule _absolute-pathname ". { pathname-element . } OBJECT-identifier")
+
+(define-ebnf-rule _relative-pathname "{ ^ . } { pathname-element . } OBJECT-identifier")
+
+(define-ebnf-rule pathname-element
+  ("ENTITY-identifier | COMPONENT-INSTANTIATION-label | BLOCK-label"
+   "| GENERATE-STATEMENT-label [ " ...))
+
+
+   
