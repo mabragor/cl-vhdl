@@ -760,14 +760,14 @@
   ("[ label : ] WITH expression SELECT [ ? ] ( name | aggregate ) <= [ delay-mechanism ]"
    "{ waveform WHEN choices , } waveform WHEN choices ;"))
 
-(define-ebnf-rule selected-signal-assignment
+(define-ebnf-rule selected-force-assignment
   ("[ label : ] WITH expression SELECT [ ? ] name <= FORCE [ IN | OUT ]"
    "{ expression WHEN choices , } expression WHEN choices ;"))
 
 (define-ebnf-rule delay-mechanism "TRANSPORT | [ REJECT TIME-expression ] INERTIAL")
 
 (define-ebnf-rule waveform
-  "((VALUE-expression [ AFTER TIME-expression ] | NULL [ AFTER TIME-expression ] )) {, ...} | UNAFFECTED")
+  "( VALUE-expression [ AFTER TIME-expression ] | NULL [ AFTER TIME-expression ] ) {, ...} | UNAFFECTED")
 
 (define-ebnf-rule variable-assignment-statement
   ("[ label : ] simple-variable-assignment _| [ label : ] conditional-variable-assignment"
@@ -930,4 +930,83 @@
 (define-ebnf-rule _tool-directive "` identifier { graphic-character }")
 
 
-   
+;; OK, now that I have all the syntactic rules explicitly written down,
+;; I need to figure out a way, how to generate their parsed versions
+
+;; * just a S-exp parsed version of EBNF
+;; * parser code
+;; * way to do custom adjustments to this code
+
+;; For example, where does this descrption map?
+;; "INSTANTIATION-label : ( [ COMPONENT ] COMPONENT-name"
+;; "                        | ENTITY ENTITY-name [ (( ARCHITECTURE-identifier )) ]"
+;; "                        | CONFIGURATION CONFIGURATION-name )"
+;; "[ GENERIC MAP (( GENERIC-association-list )) ] [ PORT MAP (( PORT-association-list )) ] ;"))
+
+;; We are after "things"
+;; Tokens we encode as keywords or strings
+
+;; ((label :instantiation)
+;;  ":"
+;;  (|| ((? :component) (name :component))
+;;      (:entity (name :entity) (? "(" (identifier :architecture) ")"))
+;;      (:configuration (name :configuration)))
+;;  (? :generic :map "(" (association-list :generic) ")")
+;;  (? :port :map "(" (association-list :port) ")"))
+
+;; Let's do some more examples
+
+;; descents *should* be inside lists, as otherwise I can't tell whether
+;; (name :kwd) means list of descent 'name' and a KWD, or is KWD an advice for name.
+
+;; (|| (decimal-literal) based-literal physical-literal identifier
+;;     character-literal string-literal bit-string-literal :null) ; here this :null can't be discarded
+
+;; if CAR is a symbol not from KEYWORD package and not a reserved symbol, then it's interpreted as descent
+
+;; (shift-expression (? (|| "=" "/=" "<" ... (new "?=") ...)
+;;                      shift-expression))
+
+;; (|| (relation (* :and relation))
+;;     (relation (? :nand relation))
+;;     (relation (* :or relation))
+;;     (relation (? :nor relation))
+;;     (relation (* :xor relation))
+;;     (relation (* :xnor relation))) ; none of these keywords in sub-clauses can be discarded
+
+;; (|| ((new (? :inertial)) (expression))
+;;     ((name :signal))
+;;     ((name :variable))
+;;     ((name :file))
+;;     (new (subtype-indication))
+;;     (new (name :subprogram))
+;;     (new (name :package))
+;;     :open
+;;     ((name :function) "(" (|| (name :signal) (name :variable)) ")")
+;;     ((type-mark) "(" (|| (name :signal) (name :variable)) ")"))
+
+;; First argument of + is always the delimiter
+;; (|| (+ "," (|| ((expression :value) (? :after (expression :time)))
+;;                (:null (? :after (expression :time)))))
+;;     :unaffected)
+
+;; ((? (label) ":") :with (expression) :select (? "?")
+;;  (name) "<=" :force (? (|| :in :out))
+;;              (* (expression) :when choices ",")
+;;              (expression) :when choices ";")
+
+;; Ok, and now what will be the structure of the parsed data
+;; This should omit some symbols (which are necessary for grammar), but leave
+;; symbols, that convey some useful information
+
+;; I'd better write a checker, that forbids me to define a given rule twice
+;; (because there are misprints in the book)
+
+
+;; ((? (label) ":") :with (expression) :select (? "?")
+;;  (name) "<=" :force (? (|| :in :out)) (* (expression) :when choices ",") (expression) :when choices ";")
+
+;; No, apparently, I need to actually read about how some feature is used to develop
+;; a good Lisp syntax for it
+
+
