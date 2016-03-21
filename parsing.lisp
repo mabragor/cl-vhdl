@@ -913,7 +913,21 @@
 
 (define-ebnf-rule pathname-element
   ("ENTITY-identifier | COMPONENT-INSTANTIATION-label | BLOCK-label"
-   "| GENERATE-STATEMENT-label [ " ...))
+   "| GENERATE-STATEMENT-label [ (( STATIC-expression )) ] | PACKAGE-identifier"))
+
+(define-ebnf-rule _package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier")
+
+(define-ebnf-rule literal
+  ("decimal-literal | based-literal | physical-literal | identifier"
+   "| character-literal | string-literal | bit-string-literal | NULL"))
+
+(define-ebnf-rule aggregate "(( ( [ choices -> ] expression ) {, ... } ))")
+
+(define-ebnf-rule choices "( simple-expression | discrete-range | identifier | OTHERS ) { || ... }")
+
+(define-ebnf-rule label "identifier")
+
+(define-ebnf-rule _tool-directive "` identifier { graphic-character }")
 
 
    
