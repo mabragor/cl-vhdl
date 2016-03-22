@@ -13,6 +13,13 @@
 	       (:file "parsing-macro")
 	       (:file "parsing-ebnf")
 	       (:file "parsing")
+	       (:file "parse-design-file")
+	       (:file "parse-decls")
+	       (:file "parse-concurrent")
+	       (:file "parse-sequential")
+	       (:file "parse-interfaces")
+	       (:file "parse-type")
+	       (:file "parse-expressions")
                (:file "cl-vhdl")
 	       (:static-file "sketches")))
 
