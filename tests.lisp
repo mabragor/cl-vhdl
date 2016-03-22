@@ -112,3 +112,32 @@
     (frob (:bin "HH0011") "6SX\"H3\"")
     (signals (error) (vhdl-parse 'convolved-binary-string "6SX\"28\""))
     (frob (:bin "101000") "6SX\"E8\"")))
+
+(test ebnf
+      (macrolet ((frob (x y) `(is (equal ',x (s-exp<-ebnf ',y)))))
+	(frob (:entity (identifier) :is
+		       (? :generic "(" (interface-list :generic) ")" ";")
+		       (? :port "(" (interface-list :port) ")" ";")
+		       (* (entity-declarative-item))
+		       (? :begin
+			  (* (|| ((concurrent-assertion-statement))
+				 ((concurrent-procedure-call-statement :passive))
+				 ((process-statement :passive))
+				 ((new (psl-directive :psl))))))
+		       :end (? :entity) (? (identifier)) ";")
+	      ("ENTITY identifier IS"
+	       "   [ GENERIC (( GENERIC-interface-list )) ; ]"
+	       "   [ PORT (( PORT-interface-list )) ; ]"
+	       "   { entity-declarative-item }"
+	       "[ BEGIN"
+	       "   { concurrent-assertion-statement"
+	       "     | PASSIVE-concurrent-procedure-call-statement"
+	       "     | PASSIVE-process-statement"
+	       ;; I don't know if this line is actually correct
+	       ;; and, furthermore, now it deviates from the book
+	       "     | _PSL-psl-directive } ]"
+	       "END [ ENTITY ] [ identifier ] ;"))))
+
+
+
+      
