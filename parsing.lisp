@@ -343,7 +343,12 @@
   (if (and *vhdl-version* (< *vhdl-version* 2008))
       simple-binary-string
       convolved-binary-string))
-      
+
+(define-vhdl-rule case-insensitive-string (str)
+  (let ((res (string-downcase (descend-with-rule 'any-string (length str)))))
+    (if (not (string= (string-downcase str) res))
+	(fail-parse "Case-insensitive string is different")
+	res)))
 
 ;;;; OK, let's write all the rules in EBNF, then figure out how to parse this condensed descrption
 ;;;; what semantics of all this is
@@ -351,9 +356,19 @@
 
 ;; We will change this to something meaningful later
 (defmacro define-ebnf-rule (name syntax &body body)
-  (declare (ignore name body))
-  (s-exp<-ebnf syntax)
-  nil)
+  (declare (ignore body))
+  `(macrolet ((wh? (x) `(progn (? whitespace) ,x))
+	      (new (x &optional (y nil y-p))
+		(if y-p
+		    `(if (or (not *vhdl-version*)
+			     (<= ,x *vhdl-version*))
+			 ,y
+			 (fail-parse "Version we are trying to parse doesn't support this"))
+		    `(if (or (not *vhdl-version*)
+			     (<= 2008 *vhdl-version*)) ; current version as these lines are written
+			 ,x))))
+     (define-vhdl-rule ,name ()
+       ,@(esrap-liquid-body (s-exp<-ebnf syntax)))))
     
 
 ;;; Design file
@@ -916,8 +931,8 @@
 (define-ebnf-rule _relative-pathname "{ ^ . } { pathname-element . } OBJECT-identifier")
 
 (define-ebnf-rule pathname-element
-  ("ENTITY-identifier | COMPONENT-INSTANTIATION-label | BLOCK-label"
-   "| GENERATE-STATEMENT-label [ (( STATIC-expression )) ] | PACKAGE-identifier"))
+    ("ENTITY-identifier | COMPONENT-INSTANTIATION-label | BLOCK-label"
+     "| GENERATE-STATEMENT-label [ (( STATIC-expression )) ] | PACKAGE-identifier"))
 
 (define-ebnf-rule _package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier")
 
@@ -1013,3 +1028,35 @@
 ;; No, apparently, I need to actually read about how some feature is used to develop
 ;; a good Lisp syntax for it
 
+;; Ok, how do I transform my intermediate s-exp-form into something ESRAP-LIQUID would actually understand?
+;; Let's do couple of examples manually...
+
+;; * For now we ignore the hints for sub-rules
+;; * Obviously, all this relies on the rule 'whitespace' to be already defined
+;; * NEW will be just a new macrolet, which I will define around DEFINE-VHDL-RULE
+;; * if I assume macrolet WH? --> (progn (? whitespace ...)), then everything is a little bit shorter
+
+;; (wh? (|| (wh? (list (wh? (? (wh? (descend-with-rule 'case-insensitive-string "inertial") :inertial)))
+;; 		    (wh? expression)))
+;; 	 (wh? name)
+;; 	 (new (wh? subtype-indication))
+;; 	 (new (wh? name))
+;; 	 (wh? (descend-with-rule 'case-insensitive-string "open") :open)
+;; 	 (list (wh? name)
+;; 	       (wh? (descend-with-rule 'case-insensitive-string "("))
+;; 	       (|| (wh? name)
+;; 		   (wh? name))
+;; 	       (wh? (descend-with-rule 'case-insensitive-string ")")))
+;; 	 (list (wh? type-mark)
+;; 	       (wh? (descend-with-rule 'case-insensitive-string "("))
+;; 	       (|| (wh? name) (wh? name))
+;; 	       (wh? (descend-with-rule 'case-insensitive-string ")")))))
+
+;; (WH? (|| (WH? IDENTIFIER)
+;; 	 (WH? LABEL)
+;; 	 (WH? LABEL)
+;; 	 (WH? (LIST (WH? LABEL)
+;; 		    (WH? (? (LIST (WH? (DESCEND-WITH-RULE 'CASE-INSENSITIVE-STRING "("))
+;; 				  (WH? EXPRESSION)
+;; 				  (WH? (DESCEND-WITH-RULE 'CASE-INSENSITIVE-STRING ")")))))))
+;; 	 (WH? IDENTIFIER)))
