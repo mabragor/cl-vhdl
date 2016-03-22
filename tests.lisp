@@ -141,7 +141,7 @@
 		  (operator-symbol)
 		  (character-literal)
 		  (selected-name)
-		  ((|| (name) (function-call)) "(" (+ "," expression) ")")
+		  ((|| (name) (function-call)) "(" (+ "," (expression)) ")")
 		  ((|| (name) (function-call)) "(" (discrete-range) ")") (attribute-name) (new (external-name)))
 	      ("identifier | operator-symbol | character-literal | selected-name"
 	       "| ( name | function-call ) (( expression {, ...} ))"
@@ -152,7 +152,7 @@
 				     (shift-expression)))
 	      "shift-expression [ ( = | /= | < | <= | > | >= | ?= | _?= | _?/= | _?< | _?<= | _?> | _?>= ) shift-expression ]")
 	(frob ((? :signal)
-	       (+ "," identifier) ":" (? (mode)) (subtype-indication) (? :bus) (? ":=" (expression :static)))
+	       (+ "," (identifier)) ":" (? (mode)) (subtype-indication) (? :bus) (? ":=" (expression :static)))
 	      ("[ SIGNAL ] identifier {, ... } : [ mode ] subtype-indication [ BUS ] [ := STATIC-expression ]"))))
 
 
