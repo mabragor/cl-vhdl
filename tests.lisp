@@ -120,10 +120,10 @@
 		       (? :port "(" (interface-list :port) ")" ";")
 		       (* (entity-declarative-item))
 		       (? :begin
-			  (* (|| ((concurrent-assertion-statement))
-				 ((concurrent-procedure-call-statement :passive))
-				 ((process-statement :passive))
-				 ((new (psl-directive :psl))))))
+			  (* (|| (concurrent-assertion-statement)
+				 (concurrent-procedure-call-statement :passive)
+				 (process-statement :passive)
+				 (new (psl-directive :psl)))))
 		       :end (? :entity) (? (identifier)) ";")
 	      ("ENTITY identifier IS"
 	       "   [ GENERIC (( GENERIC-interface-list )) ; ]"
@@ -136,7 +136,25 @@
 	       ;; I don't know if this line is actually correct
 	       ;; and, furthermore, now it deviates from the book
 	       "     | _PSL-psl-directive } ]"
-	       "END [ ENTITY ] [ identifier ] ;"))))
+	       "END [ ENTITY ] [ identifier ] ;"))
+	(frob (|| (identifier)
+		  (operator-symbol)
+		  (character-literal)
+		  (selected-name)
+		  ((|| (name) (function-call)) "(" (+ "," expression) ")")
+		  ((|| (name) (function-call)) "(" (discrete-range) ")") (attribute-name) (new (external-name)))
+	      ("identifier | operator-symbol | character-literal | selected-name"
+	       "| ( name | function-call ) (( expression {, ...} ))"
+	       "| ( name | function-call ) (( discrete-range ))"
+	       "| attribute-name | _external-name"))
+	(frob ((shift-expression) (? (|| "=" "/=" "<" "<=" ">" ">=" "?="
+					 (new "?=") (new "?/=") (new "?<") (new "?<=") (new "?>") (new "?>="))
+				     (shift-expression)))
+	      "shift-expression [ ( = | /= | < | <= | > | >= | ?= | _?= | _?/= | _?< | _?<= | _?> | _?>= ) shift-expression ]")
+	(frob ((? :signal)
+	       (+ "," identifier) ":" (? (mode)) (subtype-indication) (? :bus) (? ":=" (expression :static)))
+	      ("[ SIGNAL ] identifier {, ... } : [ mode ] subtype-indication [ BUS ] [ := STATIC-expression ]"))))
+
 
 
 

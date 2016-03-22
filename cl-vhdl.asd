@@ -11,6 +11,7 @@
 			 #:cg-common-ground)
   :components ((:file "package")
 	       (:file "parsing-macro")
+	       (:file "parsing-ebnf")
 	       (:file "parsing")
                (:file "cl-vhdl")
 	       (:static-file "sketches")))
