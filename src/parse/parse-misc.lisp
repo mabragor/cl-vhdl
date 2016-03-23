@@ -10,3 +10,10 @@
 (define-ebnf-rule character-literal "' graphic-character '")
 
 (define-vhdl-rule string-literal () vhdl-string)
+
+;; These are PSL rules which for now are out of my scope
+(define-vhdl-rule property-declaration ()
+  (fail-parse "Not implemented."))
+(define-vhdl-rule sequence-declaration ()
+  (fail-parse "Not implemented."))
+

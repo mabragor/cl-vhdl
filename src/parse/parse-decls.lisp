@@ -8,7 +8,10 @@
 				       "    [ GENERIC (( GENERIC-interface-list )) ;"
 				       "      [ GENERIC MAP (( GENERIC-association-list )) ; ] ]"
 				       "    { package-declarative-item }"
-				       "END [ PACKAGE ] [ identifier ] ;"))
+				       "END [ PACKAGE ] [ identifier ] ;")
+  `(:package ,2nd
+	     ,@(aif 4th it)
+	     ,@5th))
 
 (define-ebnf-rule package-declarative-item ("subprogram-declaration | subprogram-instantiation-declaration"
 					    "| package-declaration | package-instantiation-declaration"
@@ -72,7 +75,10 @@
 							 "        [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
 
 (define-ebnf-rule type-declaration ("TYPE identifier IS type-definition ;"
-				    "| TYPE identifier ; "))
+				    "| TYPE identifier ; ")
+  (if (< 2 (length res))
+      `(:type ,2nd ,4th)
+      res))
 
 (define-ebnf-rule type-definition ("enumeration-type-definition | integer-type-definition"
 				   "| floating-type-definition | physical-type-definition"
@@ -134,4 +140,5 @@
 (define-ebnf-rule group-declaration
   "GROUP identifier : GROUP-TEMPLATE-name (( ( name | character-literal ) {, ...} )) ;")
 
-(define-ebnf-rule use-clause "USE selected-name {, ...} ;")
+(define-ebnf-rule use-clause "USE selected-name {, ...} ;"
+  `(:use ,@2nd))

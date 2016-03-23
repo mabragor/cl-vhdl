@@ -1,7 +1,7 @@
 (in-package :cl-user)
 
 (defpackage :cl-vhdl-tests
-  (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens :optima)
+  (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens :optima :fare-quasiquote)
   (:shadowing-import-from :fiveam :fail)
   (:export #:run-tests))
 
@@ -200,4 +200,20 @@
     ))
   
 
+(test type-declaration
+  (with-optima-frob (type-declaration)
+    (frob (list :type 'cl-vhdl::apples (list :range _ _))
+	  "type apples is range 0 to 100;")))
 
+(test package-declaration
+  (with-optima-frob (package-declaration)
+    (frob (list :package 'cl-vhdl::int-types (list :type 'cl-vhdl::small-int
+						   (list :range _ _)))
+	  "package int_types is
+               type small_int is range 0 to 255;
+           end package int_types;")))
+
+(test use-clause
+  (with-optima-frob (use-clause)
+    (frob (list :use (list 'cl-vhdl::work (list "." 'cl-vhdl::int-types) (list "." :all)))
+	  "use work.int_types.all;")))

@@ -32,25 +32,45 @@
   ("name | literal | aggregate | function-call | qualified-expression | type-mark (( expression ))"
    "| NEW subtype-indication | NEW qualified-expression | (( expression ))"))
 
-(define-ebnf-rule function-call "FUNCTION-name [ (( PARAMETER-association-list )) ]")
-
 (define-ebnf-rule qualified-expression "type-mark ' (( expression )) | type-mark ' aggregate")
 
-(define-ebnf-rule name
-    ("identifier | operator-symbol | character-literal"
-     ;; "| selected-name"
-     ;; "| ( name | function-call ) (( expression {, ...} ))"
-     ;; "| ( name | function-call ) (( discrete-range ))"
-     ;; "| attribute-name"
-     "| _external-name"))
+(define-ebnf-rule name "compound-name | atomic-name | _external-name")
 
-(define-ebnf-rule selected-name
-  "( name | function-call ) . ( identifier | character-literal | operator-symbol | ALL )")
+(define-ebnf-rule atomic-name "identifier | operator-symbol | character-literal"
+  (when (reserved-word-p res)
+    (fail-parse "Name can't be a reserved word"))
+  res)
 
+(define-ebnf-rule compound-name ("atomic-name name-tail { ... }")
+  (cons 1st 2nd))
+
+(define-ebnf-rule name-tail ("(( expression {, ...} ))"
+			     "| (( discrete-range ))"
+			     "| selected-tail"
+			     "| attribute-tail"
+			     "| funcall-tail"))
+
+(define-ebnf-rule selected-tail ". ( atomic-name | ALL )")
+(define-ebnf-rule attribute-tail "[ signature ] ' identifier [ (( expression )) ]")
+(define-ebnf-rule funcall-tail "(( PARAMETER-association-list ))")
+
+(define-ebnf-rule selected-name "compound-name"
+  (if (not (string= "." (caar (last res))))
+      (fail-parse "Not a selected name")
+      res))
+(define-ebnf-rule attribute-name "compound-name"
+  (if (not (string= "'" (cadar (last res))))
+      (fail-parse "Not an attribute name")
+      res))
+
+(define-ebnf-rule function-call "compound-name"
+  ;; TODO : how to make a finer-grained check here?
+  (if (not (string= "(" (cadar (last res))))
+      (fail-parse "Not a function call")
+      res))
+  
 (define-ebnf-rule operator-symbol "\"{ graphic-character }\"")
 
-(define-ebnf-rule attribute-name
-  "( name | function-call ) [ signature ] ' identifier [ (( expression )) ]")
 
 ;; Apparently, [[ and ]] should denote [ and ] in text
 (define-ebnf-rule signature

@@ -131,17 +131,22 @@
 			       sequence strong
 			       vmode vprop vunit)))
 
+(defun reserved-word-p (sym)
+  (iter outer (for (version . kwds) in vhdl-reserved)
+	(when (and *vhdl-version*
+		   (> version *vhdl-version*))
+	  ;; (format t "Not my version!~%")
+	  (next-iteration))
+	(if (find sym kwds :test #'eq)
+	    (return-from outer sym))
+	(finally (return-from outer nil))))
+  
+
 (define-vhdl-rule reserved-word ()
   (let ((it basic-identifier))
-    (iter outer (for (version . kwds) in vhdl-reserved)
-	  (when (and *vhdl-version*
-		     (> version *vhdl-version*))
-	    (format t "Not my version!~%")
-	    (next-iteration))
-	  (if (find it kwds :test #'eq)
-	      (return-from outer it))
-	  (finally (fail-parse "Not a reserved word")))))
-	  
+    (or (reserved-word-p it)
+	(fail-parse "Not a reserved word."))))
+	
 			      
 (define-vhdl-rule special-symbol ()
   (|| one-letter-special-symbol
@@ -381,7 +386,7 @@
 		    `(if (or (not *vhdl-version*)
 			     (<= 2008 *vhdl-version*)) ; current version as these lines are written
 			 ,x))))
-     (define-vhdl-rule ,name ()
+     (define-vhdl-rule ,name (&optional hint)
        (let ((res ,(esrap-liquid-body (s-exp<-ebnf syntax))))
 	 (with-list-places (res)
 	   ,@(or body `(res)))))))

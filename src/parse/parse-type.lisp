@@ -6,11 +6,18 @@
 
 (define-ebnf-rule enumeration-type-definition "(( ( identifier | character-literal ) {, ...} ))")
 
-(define-ebnf-rule integer-type-definition ("RANGE ( RANGE-attribute-name"
-					   "        | simple-expression ( TO | DOWNTO ) simple-expression )"))
+(defmacro numeric-type-destructuring ()
+  `(if (< 2 (length 2nd))
+       `(:range ,(car 2nd) ,(caddr 2nd))
+       res))
 
+(define-ebnf-rule integer-type-definition ("RANGE ( RANGE-attribute-name"
+					   "        | simple-expression ( TO | DOWNTO ) simple-expression )")
+  (numeric-type-destructuring))
+  
 (define-ebnf-rule floating-type-definition ("RANGE ( RANGE-attribute-name"
-					    "        | simple-expression ( TO | DOWNTO ) simple-expression )"))
+					    "        | simple-expression ( TO | DOWNTO ) simple-expression )")
+  (numeric-type-destructuring))
 
 (define-ebnf-rule physical-type-definition ("RANGE ( RANGE-attribute-name"
 					    "        | simple-expression ( TO | DOWNTO ) simple-expression )"
