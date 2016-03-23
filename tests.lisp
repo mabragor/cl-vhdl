@@ -202,13 +202,13 @@
 
 (test type-declaration
   (with-optima-frob (type-declaration)
-    (frob (list :type 'cl-vhdl::apples (list :range _ _))
+    (frob (list :type 'cl-vhdl::apples (list :integer _ _))
 	  "type apples is range 0 to 100;")))
 
 (test package-declaration
   (with-optima-frob (package-declaration)
     (frob (list :package 'cl-vhdl::int-types (list :type 'cl-vhdl::small-int
-						   (list :range _ _)))
+						   (list :integer  _ _)))
 	  "package int_types is
                type small_int is range 0 to 255;
            end package int_types;")))
@@ -217,3 +217,12 @@
   (with-optima-frob (use-clause)
     (frob (list :use (list 'cl-vhdl::work (list "." 'cl-vhdl::int-types) (list "." :all)))
 	  "use work.int_types.all;")))
+
+(test type-definition
+  (with-optima-frob (type-definition)
+    (frob (list :physical (list _ _) 'cl-vhdl::ohm)
+	  "range 0 to 1E9
+                   units
+                     ohm;
+                   end units resistance")))
+    

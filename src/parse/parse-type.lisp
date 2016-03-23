@@ -6,23 +6,33 @@
 
 (define-ebnf-rule enumeration-type-definition "(( ( identifier | character-literal ) {, ...} ))")
 
-(defmacro numeric-type-destructuring ()
-  `(if (< 2 (length 2nd))
+(define-ebnf-rule range-definition ("RANGE ( RANGE-attribute-name"
+				    "        | simple-expression ( TO | DOWNTO ) simple-expression )")
+  (if (< 2 (length 2nd))
        `(:range ,(car 2nd) ,(caddr 2nd))
        res))
 
-(define-ebnf-rule integer-type-definition ("RANGE ( RANGE-attribute-name"
-					   "        | simple-expression ( TO | DOWNTO ) simple-expression )")
-  (numeric-type-destructuring))
+(define-ebnf-rule integer-type-definition "range-definition"
+  (if (< 2 (length res))
+      (cons :integer (cdr res))
+      res))
   
-(define-ebnf-rule floating-type-definition ("RANGE ( RANGE-attribute-name"
-					    "        | simple-expression ( TO | DOWNTO ) simple-expression )")
-  (numeric-type-destructuring))
+(define-ebnf-rule floating-type-definition "range-definition"
+  (if (< 2 (length res))
+      (cons :float (cdr res))
+      res))
 
-(define-ebnf-rule physical-type-definition ("RANGE ( RANGE-attribute-name"
-					    "        | simple-expression ( TO | DOWNTO ) simple-expression )"
-					    "   UNITS identifier { identifier = physical-literal ; }"
-					    "   END UNITS [ identifier ]"))
+(define-ebnf-rule physical-type-definition ("range-definition"
+					    "   UNITS identifier ; { identifier = physical-literal ; }"
+					    "   END UNITS [ identifier ]")
+  `(:physical ,(if (< 2 (length 1st))
+		   (cdr 1st)
+		   1st)
+	      ,3rd
+	      ,@(mapcar (lambda (x)
+			  `(:= ,(car x) (caddr x)))
+			5th)))
+
 
 (define-ebnf-rule array-type-definition ("ARRAY (( ( type-mark RANGE <> ) {, ...} )) OF ELEMENT-subtype-indication"
 					 "| ARRAY (( discrete-range {, ...} )) OF ELEMENT-subtype-indication"))

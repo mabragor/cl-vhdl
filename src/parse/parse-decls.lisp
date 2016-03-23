@@ -80,11 +80,12 @@
       `(:type ,2nd ,4th)
       res))
 
-(define-ebnf-rule type-definition ("enumeration-type-definition | integer-type-definition"
-				   "| floating-type-definition | physical-type-definition"
+(define-ebnf-rule type-definition ("physical-type-definition | integer-type-definition | floating-type-definition"
 				   "| array-type-definition | record-type-definition"
 				   "| access-type-definition | file-type-definition"
-				   "| protected-type-declaration | protected-type-body"))
+				   "| protected-type-body | protected-type-declaration"
+				   "enumeration-type-definition"
+				   ))
 
 (define-ebnf-rule constant-declaration "CONSTANT identifier {, ... } : subtype-indication [ := expression ] ;"
   `(:constant ,4th ,(aif 5th (cadr it)) ,@2nd))
