@@ -85,17 +85,20 @@
 (define-ebnf-aux-rule top-expression ()
   (transform-vararg-times expression))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defparameter *special-symbols* '(? * + || new)))
+
 (defun token-p (x)
   (and (listp x)
        (symbolp (car x))
        (not (keywordp (car x)))
-       (not (find (car x) '(? * + ||)))
+       (not (find (car x) *special-symbols*))
        (or (= 1 (length x))
 	   (= 2 (length x)))))
 
 (defun special-form-p (x)
   (and (listp x)
-       (find (car x) '(? * + ||))))
+       (find (car x) *special-symbols*)))
 	     
 (defun transform-vararg-times (expr)
   "Here we recursively look for all { ... }'s and replace them with +'s"
@@ -167,6 +170,9 @@
 					(cons ,g!-first ,g!-rest))))
 	    ((eq '* (car thing)) `(wh? (times ,(maybe-list (cdr thing)))))
 	    ((eq '? (car thing)) `(wh? (? ,(maybe-list (cdr thing)))))
+	    ((eq 'new (car thing)) (if (equal 2 (length thing))
+				       `(new ,(esrap-liquid-body (cadr thing)))
+				       `(new ,(cadr thing) ,(esrap-liquid-body (caddr thing)))))
 	    ((token-p thing) `(wh? ,(car thing)))
 	    (t `(wh? ,(maybe-list thing))))))
 	     

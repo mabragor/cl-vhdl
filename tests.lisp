@@ -156,6 +156,6 @@
 	      ("[ SIGNAL ] identifier {, ... } : [ mode ] subtype-indication [ BUS ] [ := STATIC-expression ]"))))
 
 
-
-
-      
+(test case-insensitive-string
+  (is (equal "asdf" (vhdl-parse '(esrap-liquid::descend-with-rule
+				  'cl-vhdl::case-insensitive-string "asdf") "AsdF"))))

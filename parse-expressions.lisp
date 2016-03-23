@@ -45,7 +45,7 @@
 (define-ebnf-rule selected-name
   "( name | function-call ) . ( identifier | character-literal | operator-symbol | ALL )")
 
-(define-ebnf-rule operator-symbol "{ graphic-character }")
+(define-ebnf-rule operator-symbol "\"{ graphic-character }\"")
 
 (define-ebnf-rule attribute-name
   "( name | function-call ) [ signature ] ' identifier [ (( expression )) ]")

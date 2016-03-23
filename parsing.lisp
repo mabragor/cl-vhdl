@@ -68,11 +68,15 @@
 	(fail-parse "Basic identifier should not end with an underline char."))
     (if (m~ "__" str)
 	(fail-parse "Basic identifier should not contain two successive underlines."))
-    (intern-here (s~ "_" "-" (string-upcase str)))))
+    (intern-here (cl-ppcre:regex-replace-all (literal-string "_")
+					     (string-upcase str)
+					     (literal-string "-")))))
 
 (define-vhdl-rule relaxed-basic-identifier ()
   (let ((str basic-identifier-string))
-    (intern-here (s~ "_" "-" (string-upcase str)))))
+    (intern-here (cl-ppcre:regex-replace-all (literal-string "_")
+					     (string-upcase str)
+					     (literal-string "-")))))
 
 (define-vhdl-rule basic-identifier ()
   (if *vhdl-strict*
@@ -482,3 +486,13 @@
 ;; 				  (WH? EXPRESSION)
 ;; 				  (WH? (DESCEND-WITH-RULE 'CASE-INSENSITIVE-STRING ")")))))))
 ;; 	 (WH? IDENTIFIER)))
+
+;; TODO : what are these graphic characters, really?
+(define-vhdl-rule graphic-character ()
+  character)
+
+;; (!! (|| whitespace
+;; 	;; #\;
+;; 	)))
+
+  

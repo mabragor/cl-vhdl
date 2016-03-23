@@ -49,7 +49,7 @@
 
 (define-ebnf-rule subtype-declaration "SUBTYPE identifier IS subtype-indication ;")
 
-(define-ebnf-rule subtype-indication "[ resolution-indication ] type-mark [ constant ]")
+(define-ebnf-rule subtype-indication "[ resolution-indication ] type-mark [ constraint ]")
 
 ;; This _( is interesting -- I wonder, how I would parse it
 (define-ebnf-rule resolution-indication ("RESOLUTION-FUNCTION-name | _(( _resolution-indication"
