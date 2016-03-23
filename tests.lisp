@@ -161,7 +161,21 @@
 				  'cl-vhdl::case-insensitive-string "asdf") "AsdF"))))
 
 (test constants
-  (is (equal t (match (vhdl-parse 'constant-declaration "constant number_of_bytes : integer := 4;")
-		 ((list :constant 'integer _ 'cl-vhdl::number-of-bytes) t)
-		 (otherwise nil)))))
+  (macrolet ((frob (x y) `(is (equal t (match (vhdl-parse 'constant-declaration ,y)
+					 (,x t)
+					 (otherwise nil))))))
+    (frob (list :constant 'integer _ 'cl-vhdl::number-of-bytes)
+	  "constant number_of_bytes : integer := 4;")
+    (frob (list :constant 'integer _ 'cl-vhdl::number-of-bits)
+	  "constant number_of_bits : integer := 8 * number_of_bytes;")
+    (frob (list :constant 'real _ 'cl-vhdl::e)
+	  "constant e : real := 2.718281828;")
+    (frob (list :constant 'integer _ 'cl-vhdl::size-limit 'cl-vhdl::count-limit)
+	  "constant size_limit, count_limit : integer := 255 ;")
+    (frob (list :constant 'time _ 'cl-vhdl::prop-delay)
+    	  "constant prop_delay : time := 3 ns;")
+    ))
+
+
+
 

@@ -75,7 +75,7 @@
 (define-ebnf-rule package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier")
 
 (define-ebnf-rule literal
-  ("decimal-literal | based-literal | physical-literal | identifier"
+  ("based-literal | physical-literal | decimal-literal | identifier"
    "| character-literal | string-literal | bit-string-literal | NULL"))
 
 (define-ebnf-rule aggregate "(( ( [ choices -> ] expression ) {, ... } ))")
