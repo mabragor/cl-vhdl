@@ -84,7 +84,7 @@
 				   "| array-type-definition | record-type-definition"
 				   "| access-type-definition | file-type-definition"
 				   "| protected-type-body | protected-type-declaration"
-				   "enumeration-type-definition"
+				   "| enumeration-type-definition"
 				   ))
 
 (define-ebnf-rule constant-declaration "CONSTANT identifier {, ... } : subtype-indication [ := expression ] ;"

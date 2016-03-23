@@ -3,6 +3,10 @@
 (defpackage :cl-vhdl-tests
   (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens :optima :fare-quasiquote)
   (:shadowing-import-from :fiveam :fail)
+  ;; these are symbols that occasionally end up in CL-VHDL, but we want them here
+  (:shadowing-import-from :cl-vhdl :default :case-insensitive-string :number-of-bytes
+			  :number-of-bits :e :size-limit :count-limit :prop-delay
+			  :index :program-counter :apples :resistance :ohm :kohm :mohm)
   (:export #:run-tests))
 
 (in-package :cl-vhdl-tests)
@@ -25,7 +29,7 @@
 	     (multiple-value-list (vhdl-parse 'multi-line-comment "/* asdf *a */ " :junk-allowed t)))))
 
 (test reserved-words
-  (is (equal 'cl-vhdl::default (let ((*vhdl-version* nil)) (vhdl-parse 'reserved-word "default"))))
+  (is (equal 'default (let ((*vhdl-version* nil)) (vhdl-parse 'reserved-word "default"))))
   (is (equal :caboom!
 	     (handler-case (let ((*vhdl-version* 87)) (vhdl-parse 'reserved-word "default"))
 	       (esrap-liquid::esrap-error () :caboom!)))))
@@ -159,7 +163,7 @@
 
 (test case-insensitive-string
   (is (equal "asdf" (vhdl-parse '(esrap-liquid::descend-with-rule
-				  'cl-vhdl::case-insensitive-string "asdf") "AsdF"))))
+				  'case-insensitive-string "asdf") "AsdF"))))
 
 (defmacro with-optima-frob ((what) &body body)
   `(macrolet ((frob (x y) `(let ((expr (vhdl-parse ',',what ,y))
@@ -172,21 +176,21 @@
 
 (test constant-decls
   (with-optima-frob (constant-declaration)
-    (frob (list :constant 'integer _ 'cl-vhdl::number-of-bytes)
+    (frob (list :constant 'integer _ 'number-of-bytes)
 	  "constant number_of_bytes : integer := 4;")
-    (frob (list :constant 'integer _ 'cl-vhdl::number-of-bits)
+    (frob (list :constant 'integer _ 'number-of-bits)
 	  "constant number_of_bits : integer := 8 * number_of_bytes;")
-    (frob (list :constant 'real _ 'cl-vhdl::e)
+    (frob (list :constant 'real _ 'e)
 	  "constant e : real := 2.718281828;")
-    (frob (list :constant 'integer _ 'cl-vhdl::size-limit 'cl-vhdl::count-limit)
+    (frob (list :constant 'integer _ 'size-limit 'count-limit)
 	  "constant size_limit, count_limit : integer := 255 ;")
-    (frob (list :constant 'time _ 'cl-vhdl::prop-delay)
+    (frob (list :constant 'time _ 'prop-delay)
     	  "constant prop_delay : time := 3 ns;")
     ))
 
 (test variable-decls
   (with-optima-frob (variable-declaration)
-    (frob (list :variable 'integer _ 'cl-vhdl::index) "variable index : integer := 0;")
+    (frob (list :variable 'integer _ 'index) "variable index : integer := 0;")
     (frob (list :variable 'real _ 'cl-vhdl::sum 'cl-vhdl::average 'cl-vhdl::largest)
 	  "variable sum, average, largest : real;")
     (frob (list :variable 'time _ 'cl-vhdl::start 'cl-vhdl::finish)
@@ -195,15 +199,32 @@
 
 (test simple-variable-assignment
   (with-optima-frob (simple-variable-assignment)
-    (frob (list ::= 'cl-vhdl::program-counter _) "program_counter := 0;")
-    (frob (list ::= 'cl-vhdl::index _) "index := index + 1;")
+    (frob (list ::= 'program-counter _) "program_counter := 0;")
+    (frob (list ::= 'index _) "index := index + 1;")
     ))
   
 
 (test type-declaration
   (with-optima-frob (type-declaration)
-    (frob (list :type 'cl-vhdl::apples (list :integer _ _))
-	  "type apples is range 0 to 100;")))
+    (frob (list :type 'apples (list :integer _ _))
+	  "type apples is range 0 to 100;")
+    (frob (list :type 'resistance
+		(list :physical (list _ _) 'ohm
+		      (list := 'kohm (list 'ohm 1000))
+		      (list := 'mohm (list 'kohm 1000))))
+	  "type resistance is range 0 to 1E9
+               units
+                   ohm;
+                   kohm = 1000 ohm;
+                   Mohm = 1000 kohm; -- probably later there will be problem with case-sensitivity
+               end units resistance;")
+    (frob (list :type 'cl-vhdl::alu-function
+		(list :enum 'cl-vhdl::disable 'cl-vhdl::pass 'cl-vhdl::add 'cl-vhdl::subtract 'multiply
+		      'cl-vhdl::divide))
+	  "type alu_function is (disable, pass, add, subtract, multiply, divide);")
+    (frob (list :type 'cl-vhdl::octal-digit (list :enum #\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7))
+	  "type octal_digit is ('0', '1', '2', '3', '4', '5', '6', '7');")
+    ))
 
 (test package-declaration
   (with-optima-frob (package-declaration)
@@ -225,4 +246,8 @@
                    units
                      ohm;
                    end units resistance")))
-    
+
+(test physical-literal
+  (with-optima-frob (physical-literal)
+    (frob (list 'cl-vhdl::ohm 1) "ohm")
+    (frob (list 'cl-vhdl::ohm 2) "2 ohm")))

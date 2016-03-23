@@ -4,7 +4,8 @@
 
 ;;; Type Declarations
 
-(define-ebnf-rule enumeration-type-definition "(( ( identifier | character-literal ) {, ...} ))")
+(define-ebnf-rule enumeration-type-definition "(( ( identifier | character-literal ) {, ...} ))"
+  `(:enum ,@2nd))
 
 (define-ebnf-rule range-definition ("RANGE ( RANGE-attribute-name"
 				    "        | simple-expression ( TO | DOWNTO ) simple-expression )")
@@ -30,7 +31,7 @@
 		   1st)
 	      ,3rd
 	      ,@(mapcar (lambda (x)
-			  `(:= ,(car x) (caddr x)))
+			  `(:= ,(car x) ,(caddr x)))
 			5th)))
 
 
