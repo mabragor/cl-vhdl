@@ -70,7 +70,16 @@
 
 (define-ebnf-rule if-statement
   ("[ IF-label : ] IF condition THEN { sequential-statement } { ELSIF condition THEN { sequential-statement } }"
-   "[ ELSE { sequential-statement } ] END IF [ IF-label ] ;"))
+   "[ ELSE { sequential-statement } ] END IF [ IF-label ] ;")
+  (let ((it `(:cond (,3rd ,@5th)
+		    ,@(mapcar (lambda (x)
+				`(,(cadr x) ,@(cadddr x)))
+			      6th)
+		    ,@(if 7th
+			  `((t ,@(cadr 7th)))))))
+    (if 1st
+	`(:label ,(car 1st) ,it)
+	it)))
 
 (define-ebnf-rule case-statement
   ("[ CASE-label : ] CASE _[ ? ] expression IS ( WHEN choices => { sequential-statement } ) { ... }"

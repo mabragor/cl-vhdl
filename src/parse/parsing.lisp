@@ -79,9 +79,12 @@
 					     (literal-string "-")))))
 
 (define-vhdl-rule basic-identifier ()
-  (if *vhdl-strict*
-      strict-basic-identifier
-      relaxed-basic-identifier))
+  (let ((it (if *vhdl-strict*
+		strict-basic-identifier
+		relaxed-basic-identifier)))
+    (if (reserved-word-p it)
+	(fail-parse "Identifier can't be reserved word")
+	it)))
 
 (define-vhdl-rule extended-identifier ()
   (let ((str extended-identifier-string))
@@ -507,6 +510,9 @@
 ;; TODO : what are these graphic characters, really?
 (define-vhdl-rule graphic-character ()
   character)
+
+(define-vhdl-rule bit-string-literal ()
+  binary-string)
 
 ;; (!! (|| whitespace
 ;; 	;; #\;

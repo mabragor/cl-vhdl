@@ -4,9 +4,7 @@
   (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens :optima :fare-quasiquote)
   (:shadowing-import-from :fiveam :fail)
   ;; these are symbols that occasionally end up in CL-VHDL, but we want them here
-  (:shadowing-import-from :cl-vhdl :default :case-insensitive-string :number-of-bytes
-			  :number-of-bits :e :size-limit :count-limit :prop-delay
-			  :index :program-counter :apples :resistance :ohm :kohm :mohm)
+  (:shadowing-import-from :cl-vhdl :default :case-insensitive-string)
   (:export #:run-tests))
 
 (in-package :cl-vhdl-tests)
@@ -176,21 +174,21 @@
 
 (test constant-decls
   (with-optima-frob (constant-declaration)
-    (frob (list :constant 'integer _ 'number-of-bytes)
+    (frob (list :constant 'integer _ 'cl-vhdl::number-of-bytes)
 	  "constant number_of_bytes : integer := 4;")
-    (frob (list :constant 'integer _ 'number-of-bits)
+    (frob (list :constant 'integer _ 'cl-vhdl::number-of-bits)
 	  "constant number_of_bits : integer := 8 * number_of_bytes;")
-    (frob (list :constant 'real _ 'e)
+    (frob (list :constant 'real _ 'cl-vhdl::e)
 	  "constant e : real := 2.718281828;")
-    (frob (list :constant 'integer _ 'size-limit 'count-limit)
+    (frob (list :constant 'integer _ 'cl-vhdl::size-limit 'cl-vhdl::count-limit)
 	  "constant size_limit, count_limit : integer := 255 ;")
-    (frob (list :constant 'time _ 'prop-delay)
+    (frob (list :constant 'time _ 'cl-vhdl::prop-delay)
     	  "constant prop_delay : time := 3 ns;")
     ))
 
 (test variable-decls
   (with-optima-frob (variable-declaration)
-    (frob (list :variable 'integer _ 'index) "variable index : integer := 0;")
+    (frob (list :variable 'integer _ 'cl-vhdl::index) "variable index : integer := 0;")
     (frob (list :variable 'real _ 'cl-vhdl::sum 'cl-vhdl::average 'cl-vhdl::largest)
 	  "variable sum, average, largest : real;")
     (frob (list :variable 'time _ 'cl-vhdl::start 'cl-vhdl::finish)
@@ -199,19 +197,19 @@
 
 (test simple-variable-assignment
   (with-optima-frob (simple-variable-assignment)
-    (frob (list ::= 'program-counter _) "program_counter := 0;")
-    (frob (list ::= 'index _) "index := index + 1;")
+    (frob (list ::= 'cl-vhdl::program-counter _) "program_counter := 0;")
+    (frob (list ::= 'cl-vhdl::index _) "index := index + 1;")
     ))
   
 
 (test type-declaration
   (with-optima-frob (type-declaration)
-    (frob (list :type 'apples (list :integer _ _))
+    (frob (list :type 'cl-vhdl::apples (list :integer _ _))
 	  "type apples is range 0 to 100;")
-    (frob (list :type 'resistance
-		(list :physical (list _ _) 'ohm
-		      (list := 'kohm (list 'ohm 1000))
-		      (list := 'mohm (list 'kohm 1000))))
+    (frob (list :type 'cl-vhdl::resistance
+		(list :physical (list _ _) 'cl-vhdl::ohm
+		      (list := 'cl-vhdl::kohm (list 'cl-vhdl::ohm 1000))
+		      (list := 'cl-vhdl::mohm (list 'cl-vhdl::kohm 1000))))
 	  "type resistance is range 0 to 1E9
                units
                    ohm;
@@ -267,7 +265,7 @@
 
 (test if-statement
   (with-optima-frob (if-statement)
-    (frob nil
+    (frob (list :cond (list _ "..."))
 	  "if cs1 and not cs2 and cs3 then
                ...
            end if;")
