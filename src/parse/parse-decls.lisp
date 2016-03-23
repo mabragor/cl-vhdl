@@ -35,7 +35,7 @@
 						 "| _attribute-declaration | _attribute-specification"
 						 "| use-clause | group-template-declaration | group-declaration"))
 
-(define-ebnf-rule _package-instantiation-declaration ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
+(define-ebnf-rule package-instantiation-declaration ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
 						      "    [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
 
 (define-ebnf-rule subprogram-specification "procedure-specification | function-specification")
@@ -67,7 +67,7 @@
 					       "| attribute-declaration | attribute-specification"
 					       "| use-clause | group-template-declaration | group-declaration"))
 
-(define-ebnf-rule _subprogram-instantiation-declaration ("( PROCEDURE | FUNCTION ) identifier IS"
+(define-ebnf-rule subprogram-instantiation-declaration ("( PROCEDURE | FUNCTION ) identifier IS"
 							 "    NEW UNINSTANTIATED-SUBPROGRAM-name [ signature ]"
 							 "        [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
 
@@ -80,7 +80,8 @@
 				   "| access-type-definition | file-type-definition"
 				   "| protected-type-declaration | protected-type-body"))
 
-(define-ebnf-rule constant-declaration "CONSTANT identifier {, ... } : subtype-indication [ := expression ] ;")
+(define-ebnf-rule constant-declaration "CONSTANT identifier {, ... } : subtype-indication [ := expression ] ;"
+  `(:constant ,4th ,(aif 5th (cadr it)) ,@2nd))
 
 (define-ebnf-rule signal-declaration ("SIGNAL identifier {, ... } : subtype-indication [ REGISTER | BUS ]"
 				      "                             [ := expression ] ;"))

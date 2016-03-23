@@ -56,10 +56,10 @@
 
 (define-ebnf-rule simple-variable-assignment "( name | aggregate ) := expression ;")
 
-(define-ebnf-rule _conditional-variable-assignment
+(define-ebnf-rule conditional-variable-assignment
   "( name | aggregate ) := expression WHEN condition { ELSE expression WHEN condition } [ ELSE expression ] ;")
 
-(define-ebnf-rule _selected-variable-assignment
+(define-ebnf-rule selected-variable-assignment
   ("WITH expression SELECT [ ? ] ( name | aggregate ) :="
    "{ expression WHEN choices , } expression WHEN choices ;"))
 

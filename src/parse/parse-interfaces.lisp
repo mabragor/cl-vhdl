@@ -22,15 +22,15 @@
 
 (define-ebnf-rule interface-file-declaration "FILE identifier {, ... } : subtype-indication")
 
-(define-ebnf-rule _interface-type-declaration "TYPE identifier")
+(define-ebnf-rule interface-type-declaration "TYPE identifier")
 
-(define-ebnf-rule _interface-subprogram-declaration
+(define-ebnf-rule interface-subprogram-declaration
   ("( PROCEDURE identifier [ [ PARAMETER ] ( PARAMETER_interface_list ) ]"
    "   | [ PURE | IMPURE ] FUNCTION (( identifier | operator-symbol ))"
    "                       [ [ PARAMETER ] ( PARAMETER-interface-list ) ] RETURN type-mark )"
    "[ IS ( SUBPROGRAM-name | <> ) ]"))
 
-(define-ebnf-rule _interface-package-declaration
+(define-ebnf-rule interface-package-declaration
   ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
    "GENERIC MAP (( ( GENERIC-association-list | <> | DEFAULT ) ))"))
 

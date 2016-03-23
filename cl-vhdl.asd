@@ -10,24 +10,27 @@
 			 #:quasiquote-2.0 #:cl-interpol #:esrap-liquid #:lol-re
 			 #:cg-common-ground)
   :components ((:file "package")
-	       (:file "parsing-macro")
-	       (:file "parsing-ebnf")
-	       (:file "parsing")
-	       (:file "parse-design-file")
-	       (:file "parse-decls")
-	       (:file "parse-concurrent")
-	       (:file "parse-sequential")
-	       (:file "parse-interfaces")
-	       (:file "parse-type")
-	       (:file "parse-expressions")
-	       (:file "parse-misc")
+	       (:module "parse"
+			:pathname "src/parse/"
+			:serial t
+			:components ((:file "parsing-macro")
+				     (:file "parsing-ebnf")
+				     (:file "parsing")
+				     (:file "parse-design-file")
+				     (:file "parse-decls")
+				     (:file "parse-concurrent")
+				     (:file "parse-sequential")
+				     (:file "parse-interfaces")
+				     (:file "parse-type")
+				     (:file "parse-expressions")
+				     (:file "parse-misc")))
                (:file "cl-vhdl")
 	       (:static-file "sketches")))
 
 (defsystem :cl-vhdl-tests
   :description "Tests for CL-VHDL."
   :licence "MIT"
-  :depends-on (:cl-vhdl :fiveam :cl-interpol)
+  :depends-on (:cl-vhdl :fiveam :cl-interpol :optima)
   :components ((:file "tests")))
 
 (defmethod perform ((op test-op) (sys (eql (find-system :cl-vhdl))))

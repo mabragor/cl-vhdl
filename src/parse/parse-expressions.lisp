@@ -37,10 +37,12 @@
 (define-ebnf-rule qualified-expression "type-mark ' (( expression )) | type-mark ' aggregate")
 
 (define-ebnf-rule name
-  ("identifier | operator-symbol | character-literal | selected-name"
-   "| ( name | function-call ) (( expression {, ...} ))"
-   "| ( name | function-call ) (( discrete-range ))"
-   "| attribute-name | _external-name"))
+    ("identifier | operator-symbol | character-literal"
+     ;; "| selected-name"
+     ;; "| ( name | function-call ) (( expression {, ...} ))"
+     ;; "| ( name | function-call ) (( discrete-range ))"
+     ;; "| attribute-name"
+     "| _external-name"))
 
 (define-ebnf-rule selected-name
   "( name | function-call ) . ( identifier | character-literal | operator-symbol | ALL )")
@@ -54,23 +56,23 @@
 (define-ebnf-rule signature
   "[[ [ type-mark {, ... } ] [ RETURN type-mark ] ]]")
 
-(define-ebnf-rule _external-name
+(define-ebnf-rule external-name
   ("<< CONSTANT external-pathname : subtype-indication >>"
    "| << SIGNAL external-pathname : subtype-indication >>"
    "| << VARIABLE external-pathname : subtype-indication >>"))
 
-(define-ebnf-rule _external-pathname
+(define-ebnf-rule external-pathname
   "absolute-pathname | relative-pathname | package-pathname")
 
-(define-ebnf-rule _absolute-pathname ". { pathname-element . } OBJECT-identifier")
+(define-ebnf-rule absolute-pathname ". { pathname-element . } OBJECT-identifier")
 
-(define-ebnf-rule _relative-pathname "{ ^ . } { pathname-element . } OBJECT-identifier")
+(define-ebnf-rule relative-pathname "{ ^ . } { pathname-element . } OBJECT-identifier")
 
 (define-ebnf-rule pathname-element
     ("ENTITY-identifier | COMPONENT-INSTANTIATION-label | BLOCK-label"
      "| GENERATE-STATEMENT-label [ (( STATIC-expression )) ] | PACKAGE-identifier"))
 
-(define-ebnf-rule _package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier")
+(define-ebnf-rule package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier")
 
 (define-ebnf-rule literal
   ("decimal-literal | based-literal | physical-literal | identifier"
@@ -82,4 +84,4 @@
 
 (define-ebnf-rule label "identifier")
 
-(define-ebnf-rule _tool-directive "` identifier { graphic-character }")
+(define-ebnf-rule tool-directive "` identifier { graphic-character }")

@@ -49,7 +49,12 @@
 
 (define-ebnf-rule subtype-declaration "SUBTYPE identifier IS subtype-indication ;")
 
-(define-ebnf-rule subtype-indication "[ resolution-indication ] type-mark [ constraint ]")
+(define-ebnf-rule subtype-indication (;; Clearly, the hints in BOLD are important for parsing not to be recursive
+				      ;; "[ resolution-indication ]"
+				      "type-mark [ constraint ]")
+  (aif 2nd
+       `(,1st (:constraint ,it))
+       1st))
 
 ;; This _( is interesting -- I wonder, how I would parse it
 (define-ebnf-rule resolution-indication ("RESOLUTION-FUNCTION-name | _(( _resolution-indication"

@@ -1,7 +1,7 @@
 (in-package :cl-user)
 
 (defpackage :cl-vhdl-tests
-  (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens)
+  (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens :optima)
   (:export #:run-tests))
 
 (in-package :cl-vhdl-tests)
@@ -159,3 +159,9 @@
 (test case-insensitive-string
   (is (equal "asdf" (vhdl-parse '(esrap-liquid::descend-with-rule
 				  'cl-vhdl::case-insensitive-string "asdf") "AsdF"))))
+
+(test constants
+  (is (equal t (match (vhdl-parse 'constant-declaration "constant number_of_bytes : integer := 4;")
+		 ((list :constant 'integer _ 'cl-vhdl::number-of-bytes) t)
+		 (otherwise nil)))))
+

@@ -6,7 +6,7 @@
 
 (defparameter *vhdl-version* nil)
 
-(defparameter *vhdl-strict* nil
+(defparameter *vhdl-strict* t
   "When this parameter is NIL, some restrictions on possible VHDL syntax are relaxed,
    so as to make it more lispy")
 
@@ -357,10 +357,20 @@
 ;;;; OK, let's write all the rules in EBNF, then figure out how to parse this condensed descrption
 ;;;; what semantics of all this is
 
+(defmacro with-list-places ((lst) &body body)
+  `(symbol-macrolet ((1st (first ,lst)) (2nd (second ,lst)) (3rd (third ,lst)) (4th (fourth ,lst))
+		     (5th (fifth ,lst)) (6th (sixth ,lst)) (7th (seventh ,lst)) (8th (eighth ,lst))
+		     (9th (ninth ,lst)) (10th (tenth ,lst)))
+     ,@body))
+
+(defmacro aif (test then &optional else)
+  `(let ((it ,test))
+     (if it
+	 ,then
+	 ,else)))
 
 ;; We will change this to something meaningful later
 (defmacro define-ebnf-rule (name syntax &body body)
-  (declare (ignore body))
   `(macrolet ((wh? (&body x) `(progn (? whitespace) ,@x))
 	      (new (x &optional (y nil y-p))
 		(if y-p
@@ -372,7 +382,9 @@
 			     (<= 2008 *vhdl-version*)) ; current version as these lines are written
 			 ,x))))
      (define-vhdl-rule ,name ()
-       ,(esrap-liquid-body (s-exp<-ebnf syntax)))))
+       (let ((res ,(esrap-liquid-body (s-exp<-ebnf syntax))))
+	 (with-list-places (res)
+	   ,@(or body `(res)))))))
     
 
 ;; OK, now that I have all the syntactic rules explicitly written down,

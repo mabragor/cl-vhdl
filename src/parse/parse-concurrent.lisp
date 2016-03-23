@@ -77,7 +77,7 @@
    "[ ELSE [ ALTERNATIVE-label : ] GENERATE generate-statement-body ]"
    "END GENERATE [ GENERATE-label ] ;"))
 
-(define-ebnf-rule _case-generate-statement
+(define-ebnf-rule case-generate-statement
   ("GENERATE-label : CASE expression GENERATE"
    "  ( WHEN [ ALTERNATIVE-label : ] choices => generate-statement-body ) { ... }"
    "END GENERATE [ GENERATE-label ] ;"))
