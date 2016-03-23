@@ -78,9 +78,7 @@
 (define-ebnf-rule resolution-indication ("RESOLUTION-FUNCTION-name | _(( _resolution-indication"
 					 "| ( _RECORD-ELEMENT-identifier resolution-indication ) {, ...} ))"))
 
-(define-ebnf-rule constraint
-  ("RANGE ( RANGE-attribute-name | simple-expression ( TO | DOWNTO ) simple-expression )"
-   "| array-constraint | _record-constraint"))
+(define-ebnf-rule constraint "range-definition | array-constraint | _record-constraint")
 
 (define-ebnf-rule array-constraint ("(( discrete-range {, ... } )) [ array-constraint | record-constraint ]"
 				    "| (( OPEN )) [ array-constraint | record-constraint ]"))

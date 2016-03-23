@@ -280,3 +280,8 @@
   (with-optima-frob (wait-statement)
     (frob (list :wait (list :until _))
 	  "wait until clk;")))
+
+(test subtype-declaration
+  (with-optima-frob (subtype-declaration)
+    (frob nil
+	  "subtype small_int is integer range -128 to 127;")))
