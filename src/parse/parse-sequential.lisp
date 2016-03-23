@@ -4,6 +4,12 @@
 
 ;;; Sequential Statements
 
+(defmacro! wrapping-in-label (expr)
+  `(let ((,g!-it ,expr))
+     (if 1st
+	 `(:label ,(car 1st) ,,g!-it)
+	 ,g!-it)))
+
 (define-ebnf-rule sequential-statement
   ("wait-statement | assertion-statement | report-statement | signal-assignment-statement"
    "| variable-assignment-statement | procedure-call-statement | if-statement | case-statement"
@@ -12,7 +18,10 @@
   
 
 (define-ebnf-rule wait-statement
-  "[ label : ] WAIT [ ON SIGNAL-name {, ...} ] [ UNTIL condition ] [ FOR TIME-expression ] ;")
+    "[ label : ] WAIT [ ON SIGNAL-name {, ...} ] [ UNTIL condition ] [ FOR TIME-expression ] ;"
+  (wrapping-in-label `(:wait ,@(if 3rd `((:on ,@(cadr 3rd))))
+			     ,@(if 4th `((:until ,(cadr 4th))))
+			     ,@(if 5th `((:for ,(cadr 4th)))))))
 
 (define-ebnf-rule assertion-statement
   "[ label : ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;")
@@ -71,15 +80,12 @@
 (define-ebnf-rule if-statement
   ("[ IF-label : ] IF condition THEN { sequential-statement } { ELSIF condition THEN { sequential-statement } }"
    "[ ELSE { sequential-statement } ] END IF [ IF-label ] ;")
-  (let ((it `(:cond (,3rd ,@5th)
-		    ,@(mapcar (lambda (x)
-				`(,(cadr x) ,@(cadddr x)))
-			      6th)
-		    ,@(if 7th
-			  `((t ,@(cadr 7th)))))))
-    (if 1st
-	`(:label ,(car 1st) ,it)
-	it)))
+  (wrapping-in-label `(:cond (,3rd ,@5th)
+			     ,@(mapcar (lambda (x)
+					 `(,(cadr x) ,@(cadddr x)))
+				       6th)
+			     ,@(if 7th
+				   `((t ,@(cadr 7th)))))))
 
 (define-ebnf-rule case-statement
   ("[ CASE-label : ] CASE _[ ? ] expression IS ( WHEN choices => { sequential-statement } ) { ... }"

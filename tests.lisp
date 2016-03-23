@@ -275,3 +275,8 @@
   (with-optima-frob (sequential-statement)
     (frob "..."
 	  "...")))
+
+(test wait-statement
+  (with-optima-frob (wait-statement)
+    (frob (list :wait (list :until _))
+	  "wait until clk;")))
