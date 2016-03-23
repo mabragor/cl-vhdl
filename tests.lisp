@@ -237,7 +237,10 @@
 (test use-clause
   (with-optima-frob (use-clause)
     (frob (list :use (list 'cl-vhdl::work (list "." 'cl-vhdl::int-types) (list "." :all)))
-	  "use work.int_types.all;")))
+	  "use work.int_types.all;")
+    (frob (list :use (list 'cl-vhdl::ieee (list "." 'cl-vhdl::std-logic-1164) (list "." :all)))
+	  "use ieee.std_logic_1164.all;")
+    ))
 
 (test type-definition
   (with-optima-frob (type-definition)
@@ -251,3 +254,26 @@
   (with-optima-frob (physical-literal)
     (frob (list 'cl-vhdl::ohm 1) "ohm")
     (frob (list 'cl-vhdl::ohm 2) "2 ohm")))
+
+(test library-clause
+  (with-optima-frob (library-clause)
+    (frob (list :library 'cl-vhdl::ieee) "library ieee;")))
+
+(test signal-declaration
+  (with-optima-frob (signal-declaration)
+    (frob (list :signal 'cl-vhdl::std-ulogic nil (list :bus t) 'cl-vhdl::cs1 'cl-vhdl::ncs2 'cl-vhdl::cs3)
+	  "signal cs1, ncs2, cs3 : std_ulogic bus;")
+    ))
+
+(test if-statement
+  (with-optima-frob (if-statement)
+    (frob nil
+	  "if cs1 and not cs2 and cs3 then
+               ...
+           end if;")
+    ))
+  
+(test sequential-statement
+  (with-optima-frob (sequential-statement)
+    (frob "..."
+	  "...")))

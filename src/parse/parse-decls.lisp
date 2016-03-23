@@ -91,7 +91,8 @@
   `(:constant ,4th ,(aif 5th (cadr it)) ,@2nd))
 
 (define-ebnf-rule signal-declaration ("SIGNAL identifier {, ... } : subtype-indication [ REGISTER | BUS ]"
-				      "                             [ := expression ] ;"))
+				      "                             [ := expression ] ;")
+  `(:signal ,4th ,(aif 6th (cadr it)) ,@(aif 5th `((,it t))) ,@2nd))
 
 (define-ebnf-rule variable-declaration ("[ SHARED ] VARIABLE identifier {, ... } : subtype-indication"
 					"                                          [ := expression ] ;")

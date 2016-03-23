@@ -8,8 +8,8 @@
   (vhdl-parse 'constant-declaration "constant number_of_bits : integer := 8 * number_of_bytes;"))
 
 (defun foo ()
-  (vhdl-parse 'type-declaration
-	      "type octal_digit is ('0', '1', '2', '3', '4', '5', '6', '7');"))
+  (vhdl-parse 'library-clause
+	      "library ieee;"))
 	      
 ;; TODO : actually have a VHDL type-table
 
@@ -27,6 +27,11 @@
 #+nil(define-vhdl-type severity-level (:enum note warning error failure))
 #+nil(define-vhdl-type file-open-status (:enum open-ok status-error name-error mode-error))
 #+nil(define-vhdl-type file-open-kind (:enum read-mode write-mode append-mode))
+#+nil(define-vhdl-type boolean (:enum false true))
+#+nil(define-vhdl-type bit (:enum #\0 #\1))
+#+nil(define-vhdl-type std-ulogic (:enum #\U #\X #\0 #\1 #\Z #\W #\L #\H #\-))
+
+;; TODO : predefined character enum
 
 ;; TODO : check that expressions in type definition are locally static
 

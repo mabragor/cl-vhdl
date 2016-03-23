@@ -7,7 +7,9 @@
 (define-ebnf-rule sequential-statement
   ("wait-statement | assertion-statement | report-statement | signal-assignment-statement"
    "| variable-assignment-statement | procedure-call-statement | if-statement | case-statement"
-   "| loop-statement | next-statement | exit-statement | return-statement | null-statement"))
+   "| loop-statement | next-statement | exit-statement | return-statement | null-statement"
+   "| triple-dot-statement"))
+  
 
 (define-ebnf-rule wait-statement
   "[ label : ] WAIT [ ON SIGNAL-name {, ...} ] [ UNTIL condition ] [ FOR TIME-expression ] ;")
@@ -27,11 +29,11 @@
 
 (define-ebnf-rule conditional-signal-assignment "conditional-waveform-assignment | conditional-force-assignment")
 
-(define-ebnf-rule conditional-waveform-assignement
+(define-ebnf-rule conditional-waveform-assignment
   ("[ label : ] ( name | aggregate ) <= [ delay-mechanism ] waveform WHEN condition"
    "{ ELSE waveform WHEN condition } [ ELSE waveform ] ;"))
 
-(define-ebnf-rule conditional-force-assignement
+(define-ebnf-rule conditional-force-assignment
   ("[ label : ] name <= FORCE [ IN | OUT ] expression WHEN condition { ELSE expression WHEN condition }"
    "[ ELSE expression ] ;"))
 
@@ -86,4 +88,4 @@
 
 (define-ebnf-rule null-statement "[ label : ] NULL ;")
 
-
+(define-ebnf-rule triple-dot-statement " ...... ")

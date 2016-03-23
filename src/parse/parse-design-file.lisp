@@ -18,7 +18,8 @@
 				"| context-declaration | PSL-verification-unit"))
 
 ;; CAPS-names denote literal symbols, instead of going down the rules	  
-(define-ebnf-rule library-clause "LIBRARY identifier {, ... } ;")
+(define-ebnf-rule library-clause "LIBRARY identifier {, ... } ;"
+  `(:library ,@2nd))
 
 (define-ebnf-rule context-reference "CONTEXT selected-name {, ... };")
 
