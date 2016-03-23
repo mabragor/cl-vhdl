@@ -87,7 +87,11 @@
 				      "                             [ := expression ] ;"))
 
 (define-ebnf-rule variable-declaration ("[ SHARED ] VARIABLE identifier {, ... } : subtype-indication"
-					"                                          [ := expression ] ;"))
+					"                                          [ := expression ] ;")
+  `(,(if 1st
+	 :shared-variable
+	 :variable)
+    ,5th ,(aif 6th (cadr it)) ,@3rd))
 
 (define-ebnf-rule file-declaration ("FILE identifier {, ... } : subtype-indication"
 				    "    [ [ OPEN FILE-OPEN-KIND-expression ] IS STRING-expression ] ;"))

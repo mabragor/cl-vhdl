@@ -54,7 +54,8 @@
   ("[ label : ] simple-variable-assignment _| [ label : ] conditional-variable-assignment"
    "_| [ label : ] selected-variable-assignment"))
 
-(define-ebnf-rule simple-variable-assignment "( name | aggregate ) := expression ;")
+(define-ebnf-rule simple-variable-assignment "( name | aggregate ) := expression ;"
+  `(::= ,1st ,3rd))
 
 (define-ebnf-rule conditional-variable-assignment
   "( name | aggregate ) := expression WHEN condition { ELSE expression WHEN condition } [ ELSE expression ] ;")

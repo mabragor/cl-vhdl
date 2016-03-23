@@ -2,6 +2,7 @@
 
 (defpackage :cl-vhdl-tests
   (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens :optima)
+  (:shadowing-import-from :fiveam :fail)
   (:export #:run-tests))
 
 (in-package :cl-vhdl-tests)
@@ -160,10 +161,17 @@
   (is (equal "asdf" (vhdl-parse '(esrap-liquid::descend-with-rule
 				  'cl-vhdl::case-insensitive-string "asdf") "AsdF"))))
 
-(test constants
-  (macrolet ((frob (x y) `(is (equal t (match (vhdl-parse 'constant-declaration ,y)
-					 (,x t)
-					 (otherwise nil))))))
+(defmacro with-optima-frob ((what) &body body)
+  `(macrolet ((frob (x y) `(let ((expr (vhdl-parse ',',what ,y))
+				 (theor ',x))
+			     (match expr
+			       (,x (pass))
+			       (otherwise (fail "Expr: ~a didn't match a pattern ~a" expr theor))))))
+     ,@body))
+  
+
+(test constant-decls
+  (with-optima-frob (constant-declaration)
     (frob (list :constant 'integer _ 'cl-vhdl::number-of-bytes)
 	  "constant number_of_bytes : integer := 4;")
     (frob (list :constant 'integer _ 'cl-vhdl::number-of-bits)
@@ -176,6 +184,20 @@
     	  "constant prop_delay : time := 3 ns;")
     ))
 
+(test variable-decls
+  (with-optima-frob (variable-declaration)
+    (frob (list :variable 'integer _ 'cl-vhdl::index) "variable index : integer := 0;")
+    (frob (list :variable 'real _ 'cl-vhdl::sum 'cl-vhdl::average 'cl-vhdl::largest)
+	  "variable sum, average, largest : real;")
+    (frob (list :variable 'time _ 'cl-vhdl::start 'cl-vhdl::finish)
+	  "variable start, finish : time := 0 ns;")
+    ))
 
+(test simple-variable-assignment
+  (with-optima-frob (simple-variable-assignment)
+    (frob (list ::= 'cl-vhdl::program-counter _) "program_counter := 0;")
+    (frob (list ::= 'cl-vhdl::index _) "index := index + 1;")
+    ))
+  
 
 
