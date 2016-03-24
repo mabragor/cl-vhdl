@@ -8,8 +8,7 @@
   (vhdl-parse 'constant-declaration "constant number_of_bits : integer := 8 * number_of_bytes;"))
 
 (defun foo ()
-  (vhdl-parse 'library-clause
-	      "library ieee;"))
+  (cl-vhdl::shunting-yard '(a (* b) (* c) (+ d) (* e) (* f)) '(* +)))
 	      
 ;; TODO : actually have a VHDL type-table
 
@@ -37,3 +36,5 @@
 
 ;; TODO : add maximum and minimum built-in functions -- for VHDL 2008
 ;; TODO : predefined type REAL, predefined type INTEGER
+
+;; TODO : various restrictions on possible attribute names

@@ -234,9 +234,9 @@
 
 (test use-clause
   (with-optima-frob (use-clause)
-    (frob (list :use (list 'cl-vhdl::work (list "." 'cl-vhdl::int-types) (list "." :all)))
+    (frob (list :use (list 'cl-vhdl::work (list :dot 'cl-vhdl::int-types) (list :dot :all)))
 	  "use work.int_types.all;")
-    (frob (list :use (list 'cl-vhdl::ieee (list "." 'cl-vhdl::std-logic-1164) (list "." :all)))
+    (frob (list :use (list 'cl-vhdl::ieee (list :dot 'cl-vhdl::std-logic-1164) (list :dot :all)))
 	  "use ieee.std_logic_1164.all;")
     ))
 
@@ -283,5 +283,26 @@
 
 (test subtype-declaration
   (with-optima-frob (subtype-declaration)
-    (frob nil
+    (frob (list :subtype 'cl-vhdl::small-int 'cl-vhdl::integer (list :constraint (list :range _ _)))
 	  "subtype small_int is integer range -128 to 127;")))
+
+(test qualified-expression
+  (with-optima-frob (qualified-expression)
+    (frob (list :qualified _ 'cl-vhdl::logic-level)
+	  "logic_level'(unknown)")))
+
+(test attribute-name
+  (with-optima-frob (attribute-name)
+    (frob (list 'cl-vhdl::logic-level (list :attribute 'cl-vhdl::value _))
+	  "logic_level'value(\"Low\")")
+    (frob (list 'cl-vhdl::arith-op
+		(list :attribute 'cl-vhdl::base)
+		(list :attribute 'cl-vhdl::succ _))
+	  "arith_op'base'succ(negate)")
+    ))
+
+(test shunting-yard
+  (is (equal '(:+ (:* a b c) (:* d e f)) (cl-vhdl::shunting-yard '(a (* b) (* c) (+ d) (* e) (* f)) '(* +))))
+  (is (equal '(:+ (:* a b c) (:* d e f) (:* g h i))
+	     (cl-vhdl::shunting-yard '(a (* b) (* c) (+ d) (* e) (* f) (+ g) (* h) (* i))
+				     '(* +)))))

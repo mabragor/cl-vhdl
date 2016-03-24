@@ -78,10 +78,13 @@
 					     (string-upcase str)
 					     (literal-string "-")))))
 
+(define-vhdl-rule unguarded-basic-identifier ()
+  (if *vhdl-strict*
+      strict-basic-identifier
+      relaxed-basic-identifier))
+
 (define-vhdl-rule basic-identifier ()
-  (let ((it (if *vhdl-strict*
-		strict-basic-identifier
-		relaxed-basic-identifier)))
+  (let ((it unguarded-basic-identifier))
     (if (reserved-word-p it)
 	(fail-parse "Identifier can't be reserved word")
 	it)))
@@ -146,7 +149,7 @@
   
 
 (define-vhdl-rule reserved-word ()
-  (let ((it basic-identifier))
+  (let ((it unguarded-basic-identifier))
     (or (reserved-word-p it)
 	(fail-parse "Not a reserved word."))))
 	

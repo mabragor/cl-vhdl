@@ -65,7 +65,8 @@
 							"| use-clause"
 							"| group-template-declaration | group-declaration"))
 
-(define-ebnf-rule subtype-declaration "SUBTYPE identifier IS subtype-indication ;")
+(define-ebnf-rule subtype-declaration "SUBTYPE identifier IS subtype-indication ;"
+  `(:subtype ,2nd ,@4th))
 
 (define-ebnf-rule subtype-indication (;; Clearly, the hints in BOLD are important for parsing not to be recursive
 				      ;; "[ resolution-indication ]"
