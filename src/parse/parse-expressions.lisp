@@ -30,47 +30,51 @@
 (defun %shunting-yard (cur-op cur-lst lst-iter &optional toplevel-p)
   (declare (special precedence))
   ;; (format t "precedence : ~a~%" (hash<-assoc precedence))
-  (labels ((rec (new-op new-rhs)
-	     ;; (format t "cur-op : ~a cur-lst : ~a~%" cur-op cur-lst)
-	     (flet ((accumulate ()
-		      (setf cur-lst `((,cur-op ,.(nreverse cur-lst)))
-			    cur-op new-op)
-		      (push new-rhs cur-lst)))
-	       (cond ((null cur-op) (progn (setf cur-op new-op)
-					   (push new-rhs cur-lst)))
-		     ((eq new-op cur-op) (push new-rhs cur-lst))
-		     (t (let ((cur-precedence (gethash cur-op precedence))
-			      (new-precedence (gethash new-op precedence)))
-			  (cond ((null new-precedence) (error "Unexpected operator : ~a" new-op))
-				((= cur-precedence new-precedence)
-				 (accumulate))
-				((< cur-precedence new-precedence)
-				 (if toplevel-p
-				     (accumulate)
-				     ;; Report to higher levels
-				     (let ((new-lhs `(,cur-op ,.(nreverse cur-lst))))
-				       ;; (format t "About to report new-op : ~a lhs : ~a rhs : ~a~%"
-				       ;; 	       new-op new-lhs new-rhs)
-				       (return-from %shunting-yard (values new-op new-lhs new-rhs)))))
-				((> cur-precedence new-precedence)
-				 (multiple-value-bind (op lhs rhs)
-				     (%shunting-yard new-op (list new-rhs (pop cur-lst)) lst-iter)
-				   ;; Recompare with new operator and rhs at hand
-				   (if (not (null op))
-				       (progn (push lhs cur-lst)
-					      (rec op rhs))
-				       (progn (push lhs cur-lst)
-					      (return-from %shunting-yard
-						(if toplevel-p
-						    (cons cur-op (nreverse cur-lst))
-						    (values nil (cons cur-op (nreverse cur-lst)) nil))))))))
-			  ))))))
-    (iter (for elt in-it lst-iter)
-	  (rec (intern (string-upcase (car elt)) "KEYWORD") (cadr elt)))
-    (if toplevel-p
-	(cons cur-op (nreverse cur-lst))
-	(values nil (cons cur-op (nreverse cur-lst)) nil))
-    ))
+  (macrolet ((return-statement ()
+	       `(if toplevel-p
+		    (if (null cur-op)
+			(if (< 1 (length cur-lst))
+			    (error "Something went wrong : NIL operator and several operands : ~a"
+				   cur-lst)
+			    (car cur-lst))
+			(cons cur-op (nreverse cur-lst)))
+		    (values nil (cons cur-op (nreverse cur-lst)) nil))))
+    (labels ((rec (new-op new-rhs)
+	       ;; (format t "cur-op : ~a cur-lst : ~a~%" cur-op cur-lst)
+	       (flet ((accumulate ()
+			(setf cur-lst `((,cur-op ,.(nreverse cur-lst)))
+			      cur-op new-op)
+			(push new-rhs cur-lst)))
+		 (cond ((null cur-op) (progn (setf cur-op new-op)
+					     (push new-rhs cur-lst)))
+		       ((eq new-op cur-op) (push new-rhs cur-lst))
+		       (t (let ((cur-precedence (gethash cur-op precedence))
+				(new-precedence (gethash new-op precedence)))
+			    (cond ((null new-precedence) (error "Unexpected operator : ~a" new-op))
+				  ((= cur-precedence new-precedence)
+				   (accumulate))
+				  ((< cur-precedence new-precedence)
+				   (if toplevel-p
+				       (accumulate)
+				       ;; Report to higher levels
+				       (let ((new-lhs `(,cur-op ,.(nreverse cur-lst))))
+					 ;; (format t "About to report new-op : ~a lhs : ~a rhs : ~a~%"
+					 ;; 	       new-op new-lhs new-rhs)
+					 (return-from %shunting-yard (values new-op new-lhs new-rhs)))))
+				  ((> cur-precedence new-precedence)
+				   (multiple-value-bind (op lhs rhs)
+				       (%shunting-yard new-op (list new-rhs (pop cur-lst)) lst-iter)
+				     ;; Recompare with new operator and rhs at hand
+				     (if (not (null op))
+					 (progn (push lhs cur-lst)
+						(rec op rhs))
+					 (progn (push lhs cur-lst)
+						(return-from %shunting-yard (return-statement))))))
+				  ))))
+		 )))
+      (iter (for elt in-it lst-iter)
+	    (rec (intern (string-upcase (car elt)) "KEYWORD") (cadr elt)))
+      (return-statement))))
 		 
     
 
@@ -80,27 +84,55 @@
 
 (define-ebnf-rule expression "( ?? primary ) | logical-expression")
 
-(define-ebnf-rule logical-expression
-  ("relation { AND relation } | relation [ NAND relation ] | relation { OR relation }"
-   "| relation [ NOR relation ] | relation { XOR relation } | relation { XNOR relation }"))
+;; (define-ebnf-rule logical-expression
+;;   ("relation { AND relation } | relation [ NAND relation ] | relation { OR relation }"
+;;    "| relation [ NOR relation ] | relation { XOR relation } | relation { XNOR relation }"))
+
+(define-ebnf-rule logical-expression "relation { ( AND | NAND | OR | NOR | XOR | XNOR ) relation }"
+  ;; (format t "~a" res)
+  (shunting-yard (cons 1st 2nd) '(and nand or nor xor xnor)))
+
+(defmacro maybe-a-binary-operator ()
+  `(if 2nd
+       `(,(car 2nd) ,1st ,(cadr 2nd))
+       1st))
 
 (define-ebnf-rule relation
-  "shift-expression [ ( = | /= | < | <= | > | >= | ?= | _?= | _?/= | _?< | _?<= | _?> | _?>= ) shift-expression ]")
+    "relation-one [ ( _?< | _?<= | _?> | _?>= ) relation-one ]"
+  (maybe-a-binary-operator))
 
-(define-ebnf-rule shift-expression
-  "simple-expression [ ( SLL | SRL | SLA | SRA | ROL | ROR ) simple-expression ]")
+(define-ebnf-rule relation-one "relation-two [ ( _?= | _?/= ) relation-two ]"
+  (maybe-a-binary-operator))
 
-(define-ebnf-rule simple-expression "[ + | - ] term { ( + | - | & ) term }")
+(define-ebnf-rule relation-two "relation-three [ ( < | <= | > | >= ) relation-three ]"
+  (maybe-a-binary-operator))
+
+(define-ebnf-rule relation-three "shift-expression [ ( = | /= ) shift-expression ]"
+  (maybe-a-binary-operator))
+
+(define-ebnf-rule shift-expression "sub-shift-expression [ ( SLA | SRA ) sub-shift-expression ]"
+  (maybe-a-binary-operator))
+
+(define-ebnf-rule sub-shift-expression
+    "simple-expression [ ( SLL | SRL | ROL | ROR ) simple-expression ]"
+  (maybe-a-binary-operator))
+  
+(define-ebnf-rule simple-expression "[ + | - ] term { ( + | - | & ) term }"
+  (shunting-yard (cons (if 1st
+			   (list (intern 1st "KEYWORD") 2nd)
+			   2nd)
+		       3rd)
+		 '((+ -) &)))
 
 (define-ebnf-rule term "factor { ( * | / | MOD | REM ) factor }"
-  (shunting-yard res '(* / (:mod :rem))))
+  (shunting-yard (cons 1st 2nd) '(* / (:mod :rem))))
 
 (define-ebnf-rule factor "exponentiation | unary-op")
 
 (define-ebnf-rule exponentiation "primary [** primary ]"
-  (if (< 1 length)
-      `(** ,1st ,(cadr 2nd))
-      res))
+  (if 2nd
+      `(:** ,1st ,(cadr 2nd))
+      1st))
 
 (define-ebnf-rule unary-op ("ABS primary | NOT primary | AND primary | NAND primary | OR primary"
 			    "| NOR primary | XOR primary | XNOR primary"))

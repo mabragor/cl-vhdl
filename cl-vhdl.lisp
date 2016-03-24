@@ -4,11 +4,9 @@
 
 ;;; "cl-vhdl" goes here. Hacks and glory await!
 
-(defun foo ()
-  (vhdl-parse 'constant-declaration "constant number_of_bits : integer := 8 * number_of_bytes;"))
+(defun foo (&optional junk-allowed)
+  (vhdl-parse 'primary "a" :junk-allowed junk-allowed))
 
-(defun foo ()
-  (cl-vhdl::shunting-yard '(a (* b) (* c) (+ d) (* e) (* f)) '(* +)))
 	      
 ;; TODO : actually have a VHDL type-table
 
