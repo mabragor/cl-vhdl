@@ -119,7 +119,7 @@
   
 (define-ebnf-rule simple-expression "[ + | - ] term { ( + | - | & ) term }"
   (shunting-yard (cons (if 1st
-			   (list (intern 1st "KEYWORD") 2nd)
+			   (list 1st 2nd)
 			   2nd)
 		       3rd)
 		 '((+ -) &)))
@@ -213,7 +213,7 @@
   ("based-literal | physical-literal | decimal-literal | identifier"
    "| character-literal | string-literal | bit-string-literal | NULL"))
 
-(define-ebnf-rule aggregate "(( ( [ choices -> ] expression ) {, ... } ))")
+(define-ebnf-rule aggregate "(( ( [ choices => ] expression ) {, ... } ))")
 
 (define-ebnf-rule choices "( simple-expression | discrete-range | identifier | OTHERS ) { || ... }")
 

@@ -4,7 +4,7 @@
 
 ;;; Sequential Statements
 
-(defmacro! wrapping-in-label (expr)
+(defmacro! wrapping-in-label (&optional (expr `(cdr res)))
   `(let ((,g!-it ,expr))
      (if 1st
 	 `(:label ,(car 1st) ,,g!-it)
@@ -24,13 +24,15 @@
 			     ,@(if 5th `((:for ,(cadr 4th)))))))
 
 (define-ebnf-rule assertion-statement
-  "[ label : ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;")
+    "[ label : ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;"
+  (wrapping-in-label))
 
 (define-ebnf-rule report-statement "[ label : ] REPORT expression [ SEVERITY expression ] ;")
 
 (define-ebnf-rule signal-assignment-statement
   ("[ label : ] simple-signal-assignment | [ label : ] conditional-signal-assignment"
-   "| [ label : ] selected-signal-assignment"))
+   "| [ label : ] selected-signal-assignment")
+  (wrapping-in-label))
 
 (define-ebnf-rule simple-signal-assignment
   ("( name | aggregate ) <= [ delay-mechanism ] waveform ;"
@@ -40,11 +42,13 @@
 
 (define-ebnf-rule conditional-waveform-assignment
   ("[ label : ] ( name | aggregate ) <= [ delay-mechanism ] waveform WHEN condition"
-   "{ ELSE waveform WHEN condition } [ ELSE waveform ] ;"))
+   "{ ELSE waveform WHEN condition } [ ELSE waveform ] ;")
+  (wrapping-in-label))
 
 (define-ebnf-rule conditional-force-assignment
   ("[ label : ] name <= FORCE [ IN | OUT ] expression WHEN condition { ELSE expression WHEN condition }"
-   "[ ELSE expression ] ;"))
+   "[ ELSE expression ] ;")
+  (wrapping-in-label))
 
 (define-ebnf-rule selected-signal-assignment "selected-waveform-assignment | selected-force-assignment")
 
@@ -54,7 +58,8 @@
 
 (define-ebnf-rule selected-force-assignment
   ("[ label : ] WITH expression SELECT [ ? ] name <= FORCE [ IN | OUT ]"
-   "{ expression WHEN choices , } expression WHEN choices ;"))
+   "{ expression WHEN choices , } expression WHEN choices ;")
+  (wrapping-in-label))
 
 (define-ebnf-rule delay-mechanism "TRANSPORT | [ REJECT TIME-expression ] INERTIAL")
 
@@ -63,7 +68,8 @@
 
 (define-ebnf-rule variable-assignment-statement
   ("[ label : ] simple-variable-assignment _| [ label : ] conditional-variable-assignment"
-   "_| [ label : ] selected-variable-assignment"))
+   "_| [ label : ] selected-variable-assignment")
+  (wrapping-in-label 2nd))
 
 (define-ebnf-rule simple-variable-assignment "( name | aggregate ) := expression ;"
   `(::= ,1st ,3rd))
@@ -89,18 +95,24 @@
 
 (define-ebnf-rule case-statement
   ("[ CASE-label : ] CASE _[ ? ] expression IS ( WHEN choices => { sequential-statement } ) { ... }"
-   "END CASE _[ ? ] [ CASE-label ] ;"))
+   "END CASE _[ ? ] [ CASE-label ] ;")
+  (wrapping-in-label))
 
 (define-ebnf-rule loop-statement
   ("[ LOOP-label : ] [ WHILE condition | FOR identifier IN discrete-range ] LOOP { sequential-statement }"
-   "END LOOP [ LOOP-label ] ;"))
+   "END LOOP [ LOOP-label ] ;")
+  (wrapping-in-label))
 
-(define-ebnf-rule next-statement "[ label : ] NEXT [ LOOP-label ] [ WHEN condition ] ;")
+(define-ebnf-rule next-statement "[ label : ] NEXT [ LOOP-label ] [ WHEN condition ] ;"
+  (wrapping-in-label))
 
-(define-ebnf-rule exit-statement "[ label : ] EXIT [ LOOP-label ] [ WHEN condition ] ;")
+(define-ebnf-rule exit-statement "[ label : ] EXIT [ LOOP-label ] [ WHEN condition ] ;"
+  (wrapping-in-label))
 
-(define-ebnf-rule return-statement "[ label : ] RETURN [ expression ] ;")
+(define-ebnf-rule return-statement "[ label : ] RETURN [ expression ] ;"
+  (wrapping-in-label))
 
-(define-ebnf-rule null-statement "[ label : ] NULL ;")
+(define-ebnf-rule null-statement "[ label : ] NULL ;"
+  (wrapping-in-label))
 
 (define-ebnf-rule triple-dot-statement " ...... ")

@@ -5,7 +5,12 @@
 ;;; "cl-vhdl" goes here. Hacks and glory await!
 
 (defun foo (&optional junk-allowed)
-  (vhdl-parse 'primary "a" :junk-allowed junk-allowed))
+  (vhdl-parse 'if-statement
+	      "if en then
+                   ...
+                   -- stored_value := data_in;
+               end if;"))
+
 
 	      
 ;; TODO : actually have a VHDL type-table

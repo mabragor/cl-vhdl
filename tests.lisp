@@ -199,6 +199,7 @@
   (with-optima-frob (simple-variable-assignment)
     (frob (list ::= 'cl-vhdl::program-counter _) "program_counter := 0;")
     (frob (list ::= 'cl-vhdl::index _) "index := index + 1;")
+    (frob (list ::= 'cl-vhdl::stored-value 'cl-vhdl::data-in) "stored_value := data_in;")
     ))
   
 
@@ -265,7 +266,7 @@
 
 (test if-statement
   (with-optima-frob (if-statement)
-    (frob (list :cond (list _ "..."))
+    (frob (list :cond (list _ :|...|))
 	  "if cs1 and not cs2 and cs3 then
                ...
            end if;")
@@ -273,8 +274,8 @@
   
 (test sequential-statement
   (with-optima-frob (sequential-statement)
-    (frob "..."
-	  "...")))
+    (frob :|...| "...")
+    (frob (list ::= 'cl-vhdl::stored-value 'cl-vhdl::data-in) "stored_value := data_in;")))
 
 (test wait-statement
   (with-optima-frob (wait-statement)
@@ -345,11 +346,11 @@
   (with-optima-frob (expression)
     (frob (list :and 'cl-vhdl::a 'cl-vhdl::b 'cl-vhdl::c) "a and b and c")
     (frob (list :and 'cl-vhdl::a (list :not 'cl-vhdl::b) 'cl-vhdl::c) "a and not b and c")
-    (frob (list :and 'cl-vhdl::a (list :not 'cl-vhdl::b) (list "=" 'cl-vhdl::state 'cl-vhdl::idle))
+    (frob (list :and 'cl-vhdl::a (list :not 'cl-vhdl::b) (list := 'cl-vhdl::state 'cl-vhdl::idle))
 	  "a and not b and state = idle")
-    (frob (list :and (list "=" 'cl-vhdl::a #\1)
-		(list "=" 'cl-vhdl::b #\0)
-		(list "=" 'cl-vhdl::state 'cl-vhdl::idle))
+    (frob (list :and (list := 'cl-vhdl::a #\1)
+		(list := 'cl-vhdl::b #\0)
+		(list := 'cl-vhdl::state 'cl-vhdl::idle))
 	  "a = '1' and b = '0' and state = idle")
     ))
     

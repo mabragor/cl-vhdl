@@ -362,7 +362,7 @@
 (define-vhdl-rule case-insensitive-string (str)
   (let ((res (string-downcase (descend-with-rule 'any-string (length str)))))
     (if (not (string= (string-downcase str) res))
-	(fail-parse "Case-insensitive string is different")
+	(fail-parse-format "Case-insensitive string ~s is different from expected ~s" res (string-downcase str))
 	res)))
 
 ;;;; OK, let's write all the rules in EBNF, then figure out how to parse this condensed descrption
@@ -382,20 +382,25 @@
 
 ;; We will change this to something meaningful later
 (defmacro define-ebnf-rule (name syntax &body body)
-  `(macrolet ((wh? (&body x) `(progn (? whitespace) ,@x))
-	      (new (x &optional (y nil y-p))
-		(if y-p
-		    `(if (or (not *vhdl-version*)
-			     (<= ,x *vhdl-version*))
-			 ,y
-			 (fail-parse "Version we are trying to parse doesn't support this"))
-		    `(if (or (not *vhdl-version*)
-			     (<= 2008 *vhdl-version*)) ; current version as these lines are written
-			 ,x))))
-     (define-vhdl-rule ,name (&optional hint)
-       (let ((res ,(esrap-liquid-body (s-exp<-ebnf syntax))))
-	 (with-list-places (res)
-	   ,@(or body `(res)))))))
+  (multiple-value-bind (liquid-body greedy-char-seqs)
+      (esrap-liquid-body (s-exp<-ebnf syntax))
+    `(progn ,@(mapcar (lambda (x)
+			`(update-greedy-char-seq-table ,x))
+		      greedy-char-seqs)
+	    (macrolet ((wh? (&body x) `(progn (? whitespace) ,@x))
+		       (new (x &optional (y nil y-p))
+			 (if y-p
+			     `(if (or (not *vhdl-version*)
+				      (<= ,x *vhdl-version*))
+				  ,y
+				  (fail-parse "Version we are trying to parse doesn't support this"))
+			     `(if (or (not *vhdl-version*)
+				      (<= 2008 *vhdl-version*)) ; current version as these lines are written
+				  ,x))))
+	      (define-vhdl-rule ,name (&optional hint)
+		(let ((res ,liquid-body))
+		  (with-list-places (res)
+		    ,@(or body `(res)))))))))
     
 
 ;; OK, now that I have all the syntactic rules explicitly written down,
