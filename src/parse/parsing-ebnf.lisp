@@ -17,36 +17,38 @@
   (text (postimes small-letter)))
 
 (define-ebnf-aux-rule kwd-token ()
-  (intern (prog1 big-word (& (|| #\space 'eof)))
-	  (literal-string "KEYWORD")))
+  (intern (prog1 (v big-word) (& (|| #\space 'eof)))
+	  "KEYWORD"))
 
-(defmacro!! define-plural-rule (name single delim) ()
+(defmacro define-plural-rule (name single delim) ()
   `(define-ebnf-aux-rule ,name ()
-     (cons ,single
-	   (times (progn ,delim ,single)))))
+     (cons ,(maybe-wrap-in-descent single)
+	   (times (progn ,(maybe-wrap-in-descent delim) ,(maybe-wrap-in-descent single))))))
 
 (define-plural-rule raw-rule-name small-word "-")
 (define-plural-rule raw-rule-advice big-word "-")
 
 (define-ebnf-aux-rule rule-name ()
-  (let* ((advice (? (prog1 raw-rule-advice "-")))
-	 (name (joinl (literal-string "-") raw-rule-name)))
+  (let* ((advice (? (prog1 (v raw-rule-advice) (v "-"))))
+	 (name (joinl "-" (v raw-rule-name))))
     `(,(intern (string-upcase (text name)))
-       ,@(if advice `(,(intern (joinl (literal-string "-") advice)
-			       (literal-string "KEYWORD")))))))
+       ,@(if advice `(,(intern (joinl "-" advice)
+			       "KEYWORD"))))))
 
 (define-ebnf-aux-rule escape-char ()
-  (|| (progn #\( #\() (progn #\) #\)) (progn #\[ #\[) (progn #\] #\]) (progn #\{ #\{) (progn #\} #\})
-      (progn #\| #\|) (progn #\. #\. #\. (text #\. #\. #\.))))
+  (|| (progn (v #\() (v #\()) (progn (v #\)) (v #\)))
+      (progn (v #\[) (v #\[)) (progn (v #\]) (v #\]))
+      (progn (v #\{) (v #\{)) (progn (v #\}) (v #\}))
+      (progn (v #\|) (v #\|)) (progn (v #\.) (v #\.) (v #\.) (text (v #\.) (v #\.) (v #\.)))))
       
 
 (define-ebnf-aux-rule new-in-version ()
   (|| (let* ((version (? (postimes digit))))
-	"_"
+	(v "_")
 	(if version
 	    (parse-integer (text version))
 	    t))
-      nil))
+      'nil))
 
 (define-ebnf-aux-rule %non-or-atom ()
   (|| ;; atomic expressions
@@ -59,25 +61,25 @@
        times-expression)))
 
 (define-ebnf-aux-rule non-or-atom ()
-  (? whitespace) c!-1-new-in-version c!-2-%non-or-atom
-  (cond ((null c!-1) c!-2)
-	((eq 't c!-1) `(new ,c!-2))
-	(t `(new ,c!-1 ,c!-2))))
+  (? whitespace) (cap new new-in-version) (cap thing %non-or-atom)
+  (cond ((null (recap new)) (recap thing))
+	((eq 't (recap new)) `(new ,(recap thing)))
+	(t `(new ,(recap new) ,(recap thing)))))
 
 (define-ebnf-aux-rule or-rhs-sequence ()
-  (? whitespace) c!-1-new-in-version #\| (? whitespace) c!-2-non-or-sequence
-  (cond ((null c!-1) c!-2)
-	((eq 't c!-1) `(new ,c!-2))
-	(t `(new ,c!-1 ,c!-2))))
+  (? whitespace) (cap new new-in-version) (v #\|) (? whitespace) (cap thing non-or-sequence)
+  (cond ((null (recap new)) (recap thing))
+	((eq 't (recap new)) `(new ,(recap thing)))
+	(t `(new ,(recap new) ,(recap thing)))))
 
 
 (define-ebnf-aux-rule non-or-sequence ()
-  (let ((first non-or-atom)
-	(rest (times (progn (? whitespace) non-or-atom))))
+  (let ((first (v non-or-atom))
+	(rest (times (progn (? whitespace) (v non-or-atom)))))
     (cons first rest)))
 
 (define-ebnf-aux-rule or-expression ()
-  (let ((first non-or-sequence)
+  (let ((first (v non-or-sequence))
 	(rest (postimes or-rhs-sequence)))
     `((|| ,first ,@rest))))
 
@@ -87,7 +89,7 @@
     (? whitespace)))
 
 (define-ebnf-aux-rule top-expression ()
-  (transform-vararg-times expression))
+  (transform-vararg-times (v expression)))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defparameter *special-symbols* '(? * + || new)))
@@ -139,7 +141,7 @@
 
 (define-ebnf-aux-rule times-expression ()
   (|| `(* ,@(progm #\{ expression #\}))
-      `(|...| ,(progm #\{ (? expression) (progn (? whitespace) triple-dot (? whitespace) #\})))))
+      `(|...| ,(progm #\{ (? expression) (progn (? whitespace) (v triple-dot) (? whitespace) (v #\}))))))
 
 (define-ebnf-aux-rule special-char ()
   (|| #\( #\) #\[ #\] #\{ #\} #\| triple-dot whitespace))
@@ -178,13 +180,13 @@
 			   (if (not sym)
 			       (fail-parse "Greedy char seq failed")
 			       (return (text (nreverse sym))))
-			   (progn (push character sym) ; and here, if it's the right one, we actually advance
+			   (progn (push (v character) sym) ; and here, if it's the right one, we actually advance
 				  (setf cur-map (cdr it))))))))
       (if (string= desired-str str)
-	  (intern str (literal-string "KEYWORD"))
+	  (intern str "KEYWORD")
 	  (fail-parse-format "Greedy char seq ~s doesn't match the desired one ~s" str desired-str)))))
 	    
-(defun! esrap-liquid-body (thing)
+(defun esrap-liquid-body (thing)
   (let (greedy-char-seqs)
     (labels ((maybe-list (thing)
 	       (if (equal 1 (length thing))
@@ -192,25 +194,26 @@
 		   `(list ,@(mapcar #'rec thing))))
 	     (rec (thing)
 	       (if (atom thing)
-		   (cond ((keywordp thing) `(wh? (descend-with-rule 'case-insensitive-string
-								    ,(string-downcase thing)) ,thing))
+		   (cond ((keywordp thing) `(wh? (v case-insensitive-string
+						    ,(string-downcase thing)) ,thing))
 			 ((stringp thing) (progn (push thing greedy-char-seqs)
-						 `(wh? (descend-with-rule 'greedy-char-seq ,thing))))
+						 `(wh? (v greedy-char-seq ,thing))))
 			 (t (error "Don't know how to generate ESRAP-LIQUID code for atom: ~a" thing)))
 		   (cond ((eq '|| (car thing)) `(wh? (|| ,@(mapcar #'rec (cdr thing)))))
 			 ((eq '+ (car thing))
 			  (if (null (cadr thing))
 			      `(postimes ,(maybe-list (cddr thing)))
-			      `(let* ((,g!-first ,(maybe-list (cddr thing)))
-				      (,g!-rest (times (wh? (progn ,(rec (cadr thing))
-								   ,(maybe-list (cddr thing)))))))
-				 (cons ,g!-first ,g!-rest))))
+			      (with-gensyms (g!-first g!-rest)
+				`(let* ((,g!-first ,(maybe-list (cddr thing)))
+					(,g!-rest (times (wh? (progn ,(rec (cadr thing))
+								     ,(maybe-list (cddr thing)))))))
+				   (cons ,g!-first ,g!-rest)))))
 			 ((eq '* (car thing)) `(wh? (times ,(maybe-list (cdr thing)))))
 			 ((eq '? (car thing)) `(wh? (? ,(maybe-list (cdr thing)))))
 			 ((eq 'new (car thing)) (if (equal 2 (length thing))
 						    `(new ,(rec (cadr thing)))
 						    `(new ,(cadr thing) ,(rec (caddr thing)))))
-			 ((token-p thing) `(wh? ,(car thing)))
+			 ((token-p thing) `(wh? (v ,@thing)))
 			 (t `(wh? ,(maybe-list thing)))))))
       ;; (format t "~a~%" greedy-char-seqs)
       (values (rec thing) (nreverse greedy-char-seqs)))))

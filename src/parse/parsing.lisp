@@ -1,7 +1,6 @@
 
 (in-package #:cl-vhdl)
 
-(enable-read-macro-tokens)
 (cl-interpol:enable-interpol-syntax)
 
 (defparameter *vhdl-version* nil)
@@ -11,31 +10,31 @@
    so as to make it more lispy")
 
 (define-vhdl-rule one-line-comment ()
-  "--" `(:comment ,(text (times (!! (|| #\newline #\return))))))
+  (v "--") `(:comment ,(text (times (!! (|| #\newline #\return))))))
 
 (define-vhdl-rule multi-line-comment ()
-  "/*" (let ((it (times (!! "*/"))))
-	 "*/"
-	 `(:comment ,(text it))))
+  (v "/*") (let ((it (times (!! "*/"))))
+	     (v "*/")
+	     `(:comment ,(text it))))
 
 ;; TODO : content of comments may be saved, to make it easier to understand how to
 ;;        emit comments when going S-expr -> text.
 
 (define-vhdl-rule comment ()
   (if (find *vhdl-version* '(87 93 2002) :test #'equal)
-      one-line-comment
+      (v one-line-comment)
       (|| one-line-comment
 	  multi-line-comment)))
 
 (define-vhdl-rule whitespace ()
   (postimes (|| #\space #\tab #\newline #\return
 		comment))
-  (literal-char #\space))
+  #\space)
 
 
 (define-vhdl-rule identifier ()
   (if (find *vhdl-version* '(87) :test #'equal)
-      basic-identifier
+      (v basic-identifier)
       (|| basic-identifier
 	  extended-identifier)))
 
@@ -44,7 +43,7 @@
 		      #\_))))
 
 (define-vhdl-rule escaped-slash-char ()
-  #\\ #\\)
+  (v #\\) (v #\\))
 
 (define-vhdl-rule extended-identifier-string ()
   (progm #\\
@@ -61,36 +60,36 @@
   (intern x "CL-VHDL"))
 
 (define-vhdl-rule strict-basic-identifier ()
-  (let ((str basic-identifier-string))
-    (if (not (m~ "(?i)^[a-z]" str))
+  (let ((str (v basic-identifier-string)))
+    (if (not (cl-ppcre:all-matches-as-strings #?r"(?i)^[a-z]" str))
 	(fail-parse "Basic identifier should start with a letter."))
-    (if (m~ "_$" str)
+    (if (cl-ppcre:all-matches-as-strings #?r"_$" str)
 	(fail-parse "Basic identifier should not end with an underline char."))
-    (if (m~ "__" str)
+    (if (cl-ppcre:all-matches-as-strings #?r"__" str)
 	(fail-parse "Basic identifier should not contain two successive underlines."))
-    (intern-here (cl-ppcre:regex-replace-all (literal-string "_")
+    (intern-here (cl-ppcre:regex-replace-all "_"
 					     (string-upcase str)
-					     (literal-string "-")))))
+					     "-"))))
 
 (define-vhdl-rule relaxed-basic-identifier ()
-  (let ((str basic-identifier-string))
-    (intern-here (cl-ppcre:regex-replace-all (literal-string "_")
+  (let ((str (v basic-identifier-string)))
+    (intern-here (cl-ppcre:regex-replace-all "_"
 					     (string-upcase str)
-					     (literal-string "-")))))
+					     "-"))))
 
 (define-vhdl-rule unguarded-basic-identifier ()
   (if *vhdl-strict*
-      strict-basic-identifier
-      relaxed-basic-identifier))
+      (v strict-basic-identifier)
+      (v relaxed-basic-identifier)))
 
 (define-vhdl-rule basic-identifier ()
-  (let ((it unguarded-basic-identifier))
+  (let ((it (v unguarded-basic-identifier)))
     (if (reserved-word-p it)
 	(fail-parse "Identifier can't be reserved word")
 	it)))
 
 (define-vhdl-rule extended-identifier ()
-  (let ((str extended-identifier-string))
+  (let ((str (v extended-identifier-string)))
     ;; We add #\@, so that every extended identifier is distinct from every basic one
     (intern-here (concatenate 'string "@" str))))
 
@@ -149,7 +148,7 @@
   
 
 (define-vhdl-rule reserved-word ()
-  (let ((it unguarded-basic-identifier))
+  (let ((it (v unguarded-basic-identifier)))
     (or (reserved-word-p it)
 	(fail-parse "Not a reserved word."))))
 	
@@ -174,21 +173,21 @@
   (postimes (character-ranges (#\0 #\9) (#\a #\f) (#\A #\F))))
 
 (define-vhdl-rule dec-digit-string ()
-  (let* ((first dec-digit-elt-string)
-	 (rest (times (progn #\_ dec-digit-elt-string))))
+  (let* ((first (v dec-digit-elt-string))
+	 (rest (times (progn (v #\_) (v dec-digit-elt-string)))))
     (text first rest)))
 
 (define-vhdl-rule hex-digit-string ()
-  (let* ((first hex-digit-elt-string)
-	 (rest (times (progn #\_ hex-digit-elt-string))))
+  (let* ((first (v hex-digit-elt-string))
+	 (rest (times (progn (v #\_) (v hex-digit-elt-string)))))
     (text first rest)))
 
 (define-vhdl-rule generic-digit-elt-string ()
   (postimes (!! (|| #\_ #\newline #\return #\"))))
 
 (define-vhdl-rule generic-digit-string ()
-  (let* ((first generic-digit-elt-string)
-	 (rest (times (progn #\_ generic-digit-elt-string))))
+  (let* ((first (v generic-digit-elt-string))
+	 (rest (times (progn (v #\_) (v generic-digit-elt-string)))))
     (text first rest)))
 
 (define-vhdl-rule sign ()
@@ -197,20 +196,20 @@
 (define-vhdl-rule exponent ()
   (|| #\e #\E)
   (let* ((sign (? sign))
-	 (str dec-digit-string))
+	 (str (v dec-digit-string)))
     (parse-integer (text sign str))))
 
 (define-vhdl-rule integer-dec-number-literal ()
-  (let* ((str dec-digit-string)
+  (let* ((str (v dec-digit-string))
 	 (expt (? exponent)))
     (cond ((not expt) (parse-integer str))
 	  ((< expt 0) (fail-parse "Exponent of an integer literal can't be negative"))
 	  (t (* (parse-integer str) (expt 10 expt))))))
 
-;; TODO : maybe Lisp's infinite precision works again me here -- introducing subtle rounding errors
+;; TODO : maybe Lisp's infinite precision works against me here -- introducing subtle rounding errors
 (define-vhdl-rule real-dec-number-literal ()
-  (let* ((int dec-digit-string)
-	 (rem (progn #\. dec-digit-string))
+  (let* ((int (v dec-digit-string))
+	 (rem (progn (v #\.) (v dec-digit-string)))
 	 (expt (? exponent))
 	 (base (float (+ (parse-integer int)
 			 (* (expt 10 (- (length rem)))
@@ -229,27 +228,27 @@
 		   explicit-base-number-literal))
 
 (define-vhdl-rule explicit-base-meat (base)
-  (most-full-parse (descend-with-rule 'explicit-base-meat-integer base)
-		   (descend-with-rule 'explicit-base-meat-real base)))
+  (most-full-parse (v explicit-base-meat-integer base)
+		   (v explicit-base-meat-real base)))
 
 (define-vhdl-rule explicit-base-meat-integer (base)
   ;; TODO : check that actually only symbols which are valid for this base, are in the string
-  (parse-integer hex-digit-string :radix base))
+  (parse-integer (v hex-digit-string) :radix base))
 
 (define-vhdl-rule explicit-base-meat-real (base)
   ;; TODO : check that actually only symbols which are valid for this base, are in the string
-  (let* ((int hex-digit-string)
-	 (rem (progn #\. hex-digit-string)))
+  (let* ((int (v hex-digit-string))
+	 (rem (progn (v #\.) (v hex-digit-string))))
     (float (+ (parse-integer int :radix base)
 	      (* (expt base (- (length rem)))
 		 (parse-integer rem :radix base))))))
 
 (define-vhdl-rule explicit-base-number-literal ()
-  (let ((base (parse-integer dec-digit-string)))
+  (let ((base (parse-integer (v dec-digit-string))))
     (declare (special base))
     (if (or (< base 2) (> base 16))
 	(fail-parse-format "Explicit base should be between 2 and 16, but got ~a" base))
-    (let* ((meat (progm #\# (descend-with-rule 'explicit-base-meat base) #\#))
+    (let* ((meat (progm #\# (v explicit-base-meat base) #\#))
 	   (expt (? exponent)))
       (if (not expt)
 	  meat
@@ -263,7 +262,7 @@
   (progm #\' character #\'))
 
 (define-vhdl-rule string-char ()
-  (|| (progn #\" #\")
+  (|| (progn (v #\") (v #\"))
       (!! (|| #\newline #\return #\"))))
 
 (define-vhdl-rule vhdl-string ()
@@ -309,7 +308,7 @@
     (cond ((not explicit-length) it)
 	  ((> (length it) explicit-length) (fail-parse "Can't truncate decimal binary string"))
 	  (t (concatenate 'string
-			  (make-string (- explicit-length (length it)) :initial-element (literal-char #\0))
+			  (make-string (- explicit-length (length it)) :initial-element #\0)
 			  it)))))
 
 (define-vhdl-rule %convolved-binary-string (radix explicit-length signed-p)
@@ -319,7 +318,7 @@
 		   (concatenate 'string
 				(make-string (- explicit-length (length it))
 					     :initial-element (if (not signed-p)
-								  (literal-char #\0)
+								  #\0
 								  (char it 0)))
 				it))
 		  ((< explicit-length (length it))
@@ -330,7 +329,7 @@
 		     (if (not (string= minus
 				       (make-string (- (length it) explicit-length)
 						    :initial-element (if (not signed-p)
-									 (literal-char #\0)
+									 #\0
 									 (char rest 0)))))
 			 (progn ;; (format t (literal-string "I'm here~%"))
 				(fail-parse-format "Piece to truncate '~a' is not multiple of chars ~a"
@@ -345,22 +344,22 @@
 			    (if it
 				(parse-integer it)))))
     ;; TODO : this is really ugly way to do this dispatching -- I should have case-insensitive
-    (|| (progn (|| #\d #\D) (descend-with-rule 'decimal-binary-string explicit-length))
-	(progn (|| #\b #\B "UB" "uB" "Ub" "ub") (descend-with-rule '%convolved-binary-string 2 explicit-length nil))
-	(progn (|| "SB" "sB" "Sb" "sb") (descend-with-rule '%convolved-binary-string 2 explicit-length t))
-	(progn (|| #\o #\O "UO" "uO" "Uo" "uo") (descend-with-rule '%convolved-binary-string 8 explicit-length nil))
-	(progn (|| "SO" "sO" "So" "so") (descend-with-rule '%convolved-binary-string 8 explicit-length t))
-	(progn (|| #\x #\X "UX" "uX" "Ux" "ux") (descend-with-rule '%convolved-binary-string 16 explicit-length nil))
-	(progn (|| "SX" "sX" "Sx" "sx") (descend-with-rule '%convolved-binary-string 16 explicit-length t)))))
+    (|| (progn (|| #\d #\D) (v decimal-binary-string explicit-length))
+	(progn (|| #\b #\B "UB" "uB" "Ub" "ub") (v %convolved-binary-string 2 explicit-length nil))
+	(progn (|| "SB" "sB" "Sb" "sb") (v %convolved-binary-string 2 explicit-length t))
+	(progn (|| #\o #\O "UO" "uO" "Uo" "uo") (v %convolved-binary-string 8 explicit-length nil))
+	(progn (|| "SO" "sO" "So" "so") (v %convolved-binary-string 8 explicit-length t))
+	(progn (|| #\x #\X "UX" "uX" "Ux" "ux") (v %convolved-binary-string 16 explicit-length nil))
+	(progn (|| "SX" "sX" "Sx" "sx") (v %convolved-binary-string 16 explicit-length t)))))
 	
 
 (define-vhdl-rule binary-string ()
   (if (and *vhdl-version* (< *vhdl-version* 2008))
-      simple-binary-string
-      convolved-binary-string))
+      (v simple-binary-string)
+      (v convolved-binary-string)))
 
 (define-vhdl-rule case-insensitive-string (str)
-  (let ((res (string-downcase (descend-with-rule 'any-string (length str)))))
+  (let ((res (string-downcase (v any-string (length str)))))
     (if (not (string= (string-downcase str) res))
 	(fail-parse-format "Case-insensitive string ~s is different from expected ~s" res (string-downcase str))
 	res)))
@@ -517,10 +516,10 @@
 
 ;; TODO : what are these graphic characters, really?
 (define-vhdl-rule graphic-character ()
-  character)
+  (v character))
 
 (define-vhdl-rule bit-string-literal ()
-  binary-string)
+  (v binary-string))
 
 ;; (!! (|| whitespace
 ;; 	;; #\;

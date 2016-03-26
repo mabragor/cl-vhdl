@@ -1,7 +1,7 @@
 (in-package :cl-user)
 
 (defpackage :cl-vhdl-tests
-  (:use :alexandria :cl :cl-vhdl :fiveam :iterate :cl-read-macro-tokens :optima :fare-quasiquote)
+  (:use :alexandria :cl :cl-vhdl :fiveam :iterate :optima :fare-quasiquote)
   (:shadowing-import-from :fiveam :fail)
   ;; these are symbols that occasionally end up in CL-VHDL, but we want them here
   (:shadowing-import-from :cl-vhdl :default :case-insensitive-string)
@@ -10,7 +10,6 @@
 (in-package :cl-vhdl-tests)
 
 (cl-interpol:enable-interpol-syntax)
-(enable-read-macro-tokens)
 
 (def-suite vhdl)
 (in-suite vhdl)

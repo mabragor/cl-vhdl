@@ -1,6 +1,5 @@
 
 (in-package #:cl-vhdl)
-(enable-read-macro-tokens)
 
 ;;; Concurrent Statements
 

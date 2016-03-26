@@ -6,9 +6,8 @@
   :version "0.1"
   :license "MIT"
   :serial t
-  :depends-on (#:iterate #:cl-itertools #:defmacro-enhance
-			 #:quasiquote-2.0 #:cl-interpol #:esrap-liquid #:lol-re
-			 #:cg-common-ground)
+  :depends-on (#:iterate #:cl-itertools #:cl-ppcre #:cl-interpol #:esrap-liquid
+			 #:cg-common-ground #:alexandria)
   :components ((:file "package")
 	       (:module "parse"
 			:pathname "src/parse/"

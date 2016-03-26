@@ -1,6 +1,5 @@
 
 (in-package #:cl-vhdl)
-(enable-read-macro-tokens)
 
 (defun populate-precedence (lst)
   (let ((res (make-hash-table :test #'eq)))

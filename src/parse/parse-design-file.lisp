@@ -1,8 +1,6 @@
 
 (in-package #:cl-vhdl)
 
-(enable-read-macro-tokens)
-
 ;;; Design file
 
 (define-ebnf-rule design-file "design-unit { ... }")
