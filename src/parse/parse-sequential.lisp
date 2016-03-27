@@ -21,13 +21,16 @@
     "[ label : ] WAIT [ ON SIGNAL-name {, ...} ] [ UNTIL condition ] [ FOR TIME-expression ] ;"
   (wrapping-in-label `(:wait ,@(if 3rd `((:on ,@(cadr 3rd))))
 			     ,@(if 4th `((:until ,(cadr 4th))))
-			     ,@(if 5th `((:for ,(cadr 4th)))))))
+			     ,@(if 5th `((:for ,(cadr 5th)))))))
 
 (define-ebnf-rule assertion-statement
     "[ label : ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;"
-  (wrapping-in-label))
+  (wrapping-in-label `(:assert ,3rd
+			       ,@(if 4th `(,4th))
+			       ,@(if 5th `(,5th)))))
 
-(define-ebnf-rule report-statement "[ label : ] REPORT expression [ SEVERITY expression ] ;")
+(define-ebnf-rule report-statement "[ label : ] REPORT expression [ SEVERITY expression ] ;"
+  (wrapping-in-label `(:report ,3rd ,@(if 4th `(,4th)))))
 
 (define-ebnf-rule signal-assignment-statement
   ("[ label : ] simple-signal-assignment | [ label : ] conditional-signal-assignment"
@@ -86,7 +89,13 @@
 
 (define-ebnf-rule selected-variable-assignment
   ("WITH expression SELECT [ ? ] ( name | aggregate ) :="
-   "{ expression WHEN choices , } expression WHEN choices ;"))
+   "{ expression WHEN choices , } expression WHEN choices ;")
+  `(::= ,5th (,(if 4th :select? :select)
+	       ,@(mapcar (lambda (x)
+			   `(,(caddr x) ,(car x)))
+			 7th)
+	       (,10th ,8th))))
+				  
 
 (define-ebnf-rule procedure-call-statement "[ label : ] PROCEDURE-name [ (( PARAMETER-association-list )) ] ;")
 
@@ -111,18 +120,22 @@
 (define-ebnf-rule loop-statement
   ("[ LOOP-label : ] [ WHILE condition | FOR identifier IN discrete-range ] LOOP { sequential-statement }"
    "END LOOP [ LOOP-label ] ;")
-  (wrapping-in-label))
+  (wrapping-in-label `(:loop ,@(if 2nd `(,2nd))
+			     ,@4th)))
 
 (define-ebnf-rule next-statement "[ label : ] NEXT [ LOOP-label ] [ WHEN condition ] ;"
-  (wrapping-in-label))
+  (wrapping-in-label `(:next ,@(if 3rd `(,3rd))
+			     ,@(if 4th `(,4th)))))
 
 (define-ebnf-rule exit-statement "[ label : ] EXIT [ LOOP-label ] [ WHEN condition ] ;"
-  (wrapping-in-label))
+  (wrapping-in-label `(:exit ,@(if 3rd `(,3rd))
+			     ,@(if 4th `(,4th)))))
 
 (define-ebnf-rule return-statement "[ label : ] RETURN [ expression ] ;"
   (wrapping-in-label))
 
 (define-ebnf-rule null-statement "[ label : ] NULL ;"
-  (wrapping-in-label))
+  (wrapping-in-label 2nd))
 
 (define-ebnf-rule triple-dot-statement " ...... ")
+

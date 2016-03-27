@@ -41,3 +41,5 @@
 ;; TODO : predefined type REAL, predefined type INTEGER
 
 ;; TODO : various restrictions on possible attribute names
+
+;; TODO : separate := and ::=

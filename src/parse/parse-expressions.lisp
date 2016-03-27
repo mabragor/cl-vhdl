@@ -138,7 +138,10 @@
 
 (define-ebnf-rule primary
   ("name | literal | aggregate | function-call | qualified-expression | type-mark (( expression ))"
-   "| NEW subtype-indication | NEW qualified-expression | (( expression ))"))
+   "| NEW subtype-indication | NEW qualified-expression | parenthesized-expression"))
+
+(define-ebnf-rule parenthesized-expression "(( expression ))"
+  2nd)
 
 (define-ebnf-rule qualified-expression "type-mark ' (( expression )) | type-mark ' aggregate"
   (if (< 3 (length res))

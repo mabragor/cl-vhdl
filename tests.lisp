@@ -424,3 +424,80 @@
     (frob :others
 	  "others")
     ))
+
+(test selected-variable-assignment
+  (with-optima-frob (selected-variable-assignment)
+    (frob '(::= cl-vhdl::result (:select (cl-vhdl::pass1 cl-vhdl::operand1)
+				 (cl-vhdl::pass2 cl-vhdl::operand2)
+				 (cl-vhdl::add (:+ cl-vhdl::operand1 cl-vhdl::operand2))
+				 (cl-vhdl::subtract (:- cl-vhdl::operand1 cl-vhdl::operand2))))
+	  "with func select
+               result := operand1            when pass1,
+                         operand2            when pass2,
+                         operand1 + operand2 when add,
+                         operand1 - operand2 when subtract;")
+    ))
+
+(test null-statement (with-optima-frob (null-statement)
+		       (frob :null "null ;")))
+
+(test loop-statement
+  (with-optima-frob (loop-statement)
+    (frob (list :loop (list :wait (list :until 'cl-vhdl::clk))
+		(list := 'cl-vhdl::count-value (list :mod _ 16))
+		_)
+	  "loop
+               wait until clk;
+               count_value := (count_value + 1) mod 16;
+               count <= count_value;
+           end loop;")
+    (frob '(:loop (:while (:> cl-vhdl::index 0)) :|...|)
+	  "while index > 0 loop
+               ... -- statement A : do something with index
+           end loop;")
+    (frob (list :loop (list :for 'cl-vhdl::count-value :in (list :to 0 127))
+		_
+		(list :wait (list :for (list 'cl-vhdl::ns 5))))
+	  "for count_value in 0 to 127 loop
+               count_out <= count_value;
+               wait for 5 ns;
+           end loop;")
+    ))
+
+(test exit-statement
+  (with-optima-frob (exit-statement)
+    (frob '(:exit) "exit;")
+    (frob '(:exit (:when cl-vhdl::reset)) "exit when reset;")
+    (frob '(:exit cl-vhdl::outer (:when cl-vhdl::reset)) "exit outer when reset;")
+    ))
+
+(test next-statement
+  (with-optima-frob (next-statement)
+    (frob '(:next) "next;")
+    (frob '(:next (:when cl-vhdl::reset)) "next when reset;")
+    (frob '(:next cl-vhdl::outer (:when cl-vhdl::reset)) "next outer when reset;")
+    ))
+
+(test assert-statement
+  (with-optima-frob (assertion-statement)
+    (frob '(:assert (:<= cl-vhdl::initial-value cl-vhdl::max-value))
+	  "assert initial_value <= max_value;")
+    (frob '(:assert (:<= cl-vhdl::initial-value cl-vhdl::max-value)
+	    (:report "initial value too large"))
+	  "assert initial_value <= max_value
+             report \"initial value too large\";")
+    (frob '(:assert (:>= cl-vhdl::free-memory cl-vhdl::low-water-limit)
+	    (:report "low on memory, about to start garbage collect")
+	    (:severity cl-vhdl::note))
+	  "assert free_memory >= low_water_limit
+             report \"low on memory, about to start garbage collect\"
+             severity note;")
+    ))
+
+(test report-statement
+  (with-optima-frob (report-statement)
+    (frob '(:report "low on memory, about to start garbage collect"
+	    (:severity cl-vhdl::note))
+	  "report \"low on memory, about to start garbage collect\"
+             severity note;")
+    ))
