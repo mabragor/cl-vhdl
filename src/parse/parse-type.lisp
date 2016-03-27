@@ -86,9 +86,11 @@
 (define-ebnf-rule record-constraint
   "(( ( RECORD-ELEMENT-identifier ( array-constraint | record-constrant ) ) {, ... } ))")
 
-(define-ebnf-rule discrete-range
-  "DISCRETE-subtype-indication | RANGE-attribute-name | simple-expression ( TO | DOWNTO ) simple-expression")
+(define-ebnf-rule discrete-range "simple-discrete-range | DISCRETE-subtype-indication | RANGE-attribute-name")
 
+(define-ebnf-rule simple-discrete-range "simple-expression ( TO | DOWNTO ) simple-expression"
+  `(,2nd ,1st ,3rd))
+	   
 (define-ebnf-rule type-mark "TYPE-name | SUBTYPE-name")
 
 

@@ -75,7 +75,14 @@
   `(::= ,1st ,3rd))
 
 (define-ebnf-rule conditional-variable-assignment
-  "( name | aggregate ) := expression WHEN condition { ELSE expression WHEN condition } [ ELSE expression ] ;")
+    "( name | aggregate ) := expression WHEN condition { ELSE expression WHEN condition } [ ELSE expression ] ;"
+  `(:= ,1st (:when (,5th ,3rd)
+	      ,@(mapcar (lambda (x)
+			  `(,(cadddr x) ,(cadr x)))
+			6th)
+	      ,@(if 7th
+		    `((t ,(cadr 7th)))))))
+
 
 (define-ebnf-rule selected-variable-assignment
   ("WITH expression SELECT [ ? ] ( name | aggregate ) :="
@@ -96,7 +103,10 @@
 (define-ebnf-rule case-statement
   ("[ CASE-label : ] CASE _[ ? ] expression IS ( WHEN choices => { sequential-statement } ) { ... }"
    "END CASE _[ ? ] [ CASE-label ] ;")
-  (wrapping-in-label))
+  (wrapping-in-label `(,(if 3rd :case? :case) ,4th
+			,@(mapcar (lambda (x)
+				    `(,(cadr x) ,@(cadddr x)))
+				  6th))))
 
 (define-ebnf-rule loop-statement
   ("[ LOOP-label : ] [ WHILE condition | FOR identifier IN discrete-range ] LOOP { sequential-statement }"

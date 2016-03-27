@@ -214,7 +214,10 @@
 
 (define-ebnf-rule aggregate "(( ( [ choices => ] expression ) {, ... } ))")
 
-(define-ebnf-rule choices "( simple-expression | discrete-range | identifier | OTHERS ) { || ... }")
+(define-ebnf-rule choices "( discrete-range | simple-expression | identifier | OTHERS ) { || ... }"
+  (if (equal 1 (length res))
+      1st
+      `(:|| ,. res)))
 
 (define-ebnf-rule label "identifier")
 

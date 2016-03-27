@@ -269,6 +269,40 @@
 	  "if cs1 and not cs2 and cs3 then
                ...
            end if;")
+    (frob '(:cond ((:= cl-vhdl::mode cl-vhdl::immediate) (::= cl-vhdl::operand cl-vhdl::immed-operand))
+	    ((:or (:= cl-vhdl::opcode cl-vhdl::load) (:= cl-vhdl::opcode cl-vhdl::add)
+	      (:= cl-vhdl::opcode cl-vhdl::subtract))
+	     (::= cl-vhdl::operand cl-vhdl::memory-operand))
+	    (t (::= cl-vhdl::operand cl-vhdl::address-operand)))
+	  "if mode = immediate then
+               operand := immed_operand;
+           elsif opcode = load or opcode = add or opcode = subtract then
+               operand := memory_operand;
+           else
+               operand := address_operand;
+           end if;")
+    (frob (list :cond (list (list := 'cl-vhdl::opcode 'cl-vhdl::halt-opcode)
+			    (list ::= 'cl-vhdl::pc 'cl-vhdl::effective-address)
+			    (list ::= 'cl-vhdl::executing 'cl-vhdl::false)
+			    _))
+	  "if opcode = halt_opcode then
+               PC := effective_address;
+               executing := false;
+               halt_indicator <= true;
+           end if;")
+    (frob (list :cond (list (list := 'cl-vhdl::phase 'cl-vhdl::wash)
+			    (list :cond (list (list := 'cl-vhdl::cycle-select 'cl-vhdl::delicate-cycle)
+					      _)
+				  (list t (list _)))
+			    _))
+	  "if phase = wash then
+               if cycle_select = delicate_cycle then
+                   agitator_speed <= slow;
+               else
+                   agitator_speed <= fast;
+               end if;
+               agitator_on <= true;
+           end if;")
     ))
   
 (test sequential-statement
@@ -353,4 +387,40 @@
 	  "a = '1' and b = '0' and state = idle")
     ))
     
-  
+(test conditional-variable-assignment
+  (with-optima-frob (conditional-variable-assignment)
+    (frob '(::= cl-vhdl::result (:when ((:= cl-vhdl::mode cl-vhdl::subtract)
+					(:- cl-vhdl::a cl-vhdl::b))
+				  (t (:+ cl-vhdl::a cl-vhdl::b))))
+	  "result := a - b when mode = subtract else a + b;")))
+
+(test case-statement
+  (with-optima-frob (case-statement)
+    (frob '(:case cl-vhdl::func
+	    (cl-vhdl::pass1 (::= cl-vhdl::result cl-vhdl::operand1))
+	    (cl-vhdl::pass2 (::= cl-vhdl::result cl-vhdl::operand2))
+	    (cl-vhdl::add (::= cl-vhdl::result (:+ cl-vhdl::operand1 cl-vhdl::operand2)))
+	    (cl-vhdl::subtract (::= cl-vhdl::result (:- cl-vhdl::operand1 cl-vhdl::operand2))))
+	  "case func is
+               when pass1 =>
+                   result := operand1;
+               when pass2 =>
+                   result := operand2;
+               when add =>
+                   result := operand1 + operand2;
+               when subtract =>
+                   result := operand1 - operand2;
+           end case;")
+    ))
+
+(test choices
+  (with-optima-frob (choices)
+    (frob '(:|| cl-vhdl::load cl-vhdl::add cl-vhdl::subtract)
+	  "load | add | subtract")
+    (frob '(:to cl-vhdl::add cl-vhdl::load)
+	  "add to load")
+    (frob '(:downto cl-vhdl::branch cl-vhdl::store)
+	  "branch downto store")
+    (frob :others
+	  "others")
+    ))
