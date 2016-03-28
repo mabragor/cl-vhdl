@@ -44,7 +44,13 @@
 				      ;; I don't know if this line is actually correct
 				      ;; and, furthermore, now it deviates from the book
 				      "     | _PSL-psl-directive } ]"
-				      "END [ ENTITY ] [ identifier ] ;"))
+				      "END [ ENTITY ] [ identifier ] ;")
+  `(:entity ,2nd
+	    ,@(if 4th `((:generic ,@(caddr 4th))))
+	    ,@(if 5th `((:port ,@(caddr 5th))))
+	    ,@6th
+	    ,@(if 7th (cadr 7th))))
+
 
 (define-ebnf-rule entity-declarative-item ("subprogram-declaration | subprogram-body"
 					   "| subprogram-instantiation-declaration"

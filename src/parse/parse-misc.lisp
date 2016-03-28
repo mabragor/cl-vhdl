@@ -17,4 +17,10 @@
   (fail-parse "Not implemented."))
 (define-vhdl-rule sequence-declaration (&optional hint)
   (fail-parse "Not implemented."))
+(define-vhdl-rule clock-declaration (&optional hint)
+  (fail-parse "Not implemented."))
+(define-vhdl-rule verification-unit (&optional hint)
+  (fail-parse "Not implemented."))
+(define-vhdl-rule psl-directive (&optional hint)
+  (fail-parse "Not implemented."))
 

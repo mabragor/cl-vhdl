@@ -9,13 +9,16 @@
    "   | _interface-package-declaration ) { ; ... }"))
 
 (define-ebnf-rule interface-constant-declaration
-  ("[ CONSTANT ] identifier {, ... } : [ IN ] subtype-indication [ := STATIC-expression ]"))
+    ("[ CONSTANT ] identifier {, ... } : [ IN ] subtype-indication [ := STATIC-expression ]")
+  `(:constant ,5th ,(if 6th (cadr 6th)) ,@(if 4th `(:in)) ,@2nd))
 
 (define-ebnf-rule interface-signal-declaration
-  ("[ SIGNAL ] identifier {, ... } : [ mode ] subtype-indication [ BUS ] [ := STATIC-expression ]"))
+    ("[ SIGNAL ] identifier {, ... } : [ mode ] subtype-indication [ BUS ] [ := STATIC-expression ]")
+  `(:signal ,5th ,(if 7th (cadr 7th)) ,@(if 4th `(,4th)) ,@(if 6th `(,6th)) ,@2nd))
 
 (define-ebnf-rule interface-variable-declaration
-  ("[ VARIABLE ] identifier {, ... } : [ mode ] subtype-indication [ := STATIC-expression ]"))
+    ("[ VARIABLE ] identifier {, ... } : [ mode ] subtype-indication [ := STATIC-expression ]")
+  `(:variable ,5th ,(if 6th (cadr 6th)) ,@(if 4th `(,4th)) ,@2nd))
 
 (define-ebnf-rule mode "IN | OUT | INOUT | BUFFER | LINKAGE")
 

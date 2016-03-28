@@ -613,3 +613,15 @@
 	  "variable next_test_vector : test_vector(stimulus(0 to 7),
                                                    response(0 to 9));")
     ))
+
+;; TODO : actually make the in-ports not to be constant -- I wonder how to do this at this level...
+(test entity-declaration
+  (with-optima-frob (entity-declaration)
+    (frob '(:entity cl-vhdl::adder (:port (:constant cl-vhdl::word nil :in cl-vhdl::a)
+				    (:constant cl-vhdl::word nil :in cl-vhdl::b)
+				    (:signal cl-vhdl::word nil :out cl-vhdl::sum)))
+	  "entity adder is
+               port ( a : in word;
+                      b : in word;
+                      sum : out word );
+           end entity adder;")))
