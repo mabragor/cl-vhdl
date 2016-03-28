@@ -513,6 +513,8 @@
 	  "array (controller_state range idle to error) of natural")
     (frob '(:array cl-vhdl::real (:subtype cl-vhdl::coeff-ram-address))
 	  "array (coeff_ram_address) of real")
+    (frob '(:array cl-vhdl::state (:subtype cl-vhdl::state) (:subtype cl-vhdl::symboL))
+	  "array (state, symbol) of state")
     ))
 
 (test simple-variable-assignment-2
@@ -520,4 +522,76 @@
     (frob '(::= (:compound cl-vhdl::counters (:paren cl-vhdl::active)) (:+ (:compound cl-vhdl::counters
 									    (:paren cl-vhdl::active))
 									1))
-	  "counters(active) := counters(active) + 1;")))
+	  "counters(active) := counters(active) + 1;"))
+  (with-optima-frob (name)
+    (frob '(:compound cl-vhdl::transition-table (:paren 5 #\d))
+	  "transition_table(5, 'd')")
+    ))
+
+(test aggregate
+  (with-optima-frob (aggregate)
+    (frob '(:aggregate 0.0 0.0 0.0)
+	  "(0.0, 0.0, 0.0)")
+    (frob '(:aggregate (:=> 1 10.0) (:=> 2 20.0) (:=> 3 0.0))
+	  "(1 => 10.0, 2 => 20.0, 3 => 0.0)")
+    (frob '(:aggregate (:=> 0 1.6) (:=> 1 2.3) (:=> 2 1.6) (:=> (:to 3 63) 0.0))
+	  "(0 => 1.6, 1 => 2.3, 2 => 1.6, 3 to 63 => 0.0)")
+    (frob '(:aggregate (:=> 0 1.6) (:=> 1 2.3) (:=> 2 1.6) (:=> :others 0.0))
+	  "(0 => 1.6, 1 => 2.3, 2 => 1.6, others => 0.0)")
+    (frob '(:aggregate (:=> (:|| 0 2) 1.6) (:=> 1 2.3) (:=> :others 0.0))
+	  "(0 | 2 => 1.6, 1 => 2.3, others => 0.0)")
+    (frob (list :aggregate
+		(list :=> 0 (list :aggregate (list :=> _ 1) (list :=> :others 6)))
+		(list :=> 1 (list :aggregate (list :=> _ 2) (list :=> :others 6)))
+		(list :=> 2 (list :aggregate (list :=> _ 3) (list :=> _ 5) (list :=> :others 6))))
+	  "( 0 => ('a' => 1, others => 6),
+             1 => ('t' => 2, others => 6),
+             2 => ('d' => 3, 'h' => 5, others => 6) )"))
+  (with-optima-frob (simple-signal-assignment)
+    (frob (list :<= (list :aggregate 'cl-vhdl::z-flag 'cl-vhdl::n-flag 'cl-vhdl::v-flag 'cl-vhdl::c-flag)
+		_)
+	  "( z_flag, n_flag, v_flag, c_flag ) <= flag_reg;")
+    ))
+
+(test unconstrained-arrays
+  (with-optima-frob (type-declaration)
+    (frob '(:type cl-vhdl::sample (:array cl-vhdl::integer (:<> cl-vhdl::natural)))
+	  "type sample is array (natural range <>) of integer;"))
+  (with-optima-frob (variable-declaration)
+    (frob '(:variable (:compound cl-vhdl::sample (:to 0 63)) nil cl-vhdl::short-sample-buf)
+	  "variable short_sample_buf : sample(0 to 63);")
+    (frob '(:variable (:compound cl-vhdl::sample-set (:to 1 100) (:to 1 20)) nil cl-vhdl::main-sample-set)
+	  "variable main_sample_set : sample_set(1 to 100)(1 to 20);")
+    (frob (list :variable (list :compound 'cl-vhdl::dozen-samples _ (list :to 0 9)) nil 'cl-vhdl::bakers-samples)
+	  "variable bakers_samples : dozen_samples(open)(0 to 9);")
+    ))
+
+(test matching-case
+  (with-optima-frob (case-statement)
+    (frob '(:case? cl-vhdl::request
+	    ("1---" (:= cl-vhdl::grant "1000"))
+	    ("01--" (:= cl-vhdl::grant "0100"))
+	    ("001-" (:= cl-vhdl::grant "0010"))
+	    ("0001" (:= cl-vhdl::grant "0001"))
+	    (:others (:= cl-vhdl::grant "0000")))
+	  "case? request is
+               when \"1---\" => grant := \"1000\";
+               when \"01--\" => grant := \"0100\";
+               when \"001-\" => grant := \"0010\";
+               when \"0001\" => grant := \"0001\";
+               when others   => grant := \"0000\";
+           end case?;")))
+
+(test matching-select
+  (with-optima-frob (selected-variable-assignment)
+    (frob '(::= cl-vhdl::grant (:select? ("1---" "1000")
+				("01--" "0100")
+				("001-" "0010")
+				("0001" "0001")
+				(:others "0000")))
+	  "with request select?
+               grant := \"1000\" when \"1---\",
+                        \"0100\" when \"01--\",
+                        \"0010\" when \"001-\",
+                        \"0001\" when \"0001\",
+                        \"0000\" when others;")))

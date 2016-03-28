@@ -221,7 +221,12 @@
   ("based-literal | physical-literal | decimal-literal | identifier"
    "| character-literal | string-literal | bit-string-literal | NULL"))
 
-(define-ebnf-rule aggregate "(( ( [ choices => ] expression ) {, ... } ))")
+(define-ebnf-rule aggregate "(( ( [ choices => ] expression ) {, ... } ))"
+  `(:aggregate ,@(mapcar (lambda (x)
+			   (if (car x)
+			       `(:=> ,(caar x) ,(cadr x))
+			       (cadr x)))
+			 2nd)))
 
 (define-ebnf-rule choices "( discrete-range | simple-expression | identifier | OTHERS ) { || ... }"
   (if (equal 1 (length res))

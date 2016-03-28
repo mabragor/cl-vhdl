@@ -34,9 +34,12 @@
 			5th)))
 
 
-(define-ebnf-rule array-type-definition ("ARRAY (( ( type-mark RANGE <> ) {, ...} )) OF ELEMENT-subtype-indication"
+(define-ebnf-rule array-type-definition ("ARRAY (( boxed-range {, ...} )) OF ELEMENT-subtype-indication"
 					 "| ARRAY (( discrete-range {, ...} )) OF ELEMENT-subtype-indication")
   `(:array ,6th ,@3rd))
+
+(define-ebnf-rule boxed-range " type-mark RANGE <> "
+  `(:<> ,1st))
 
 (define-ebnf-rule record-type-definition ("RECORD ( identifier {, ...} : subtype-indication ; ) { ... }"
 					  "END RECORD [ identifier ]"))

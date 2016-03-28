@@ -38,9 +38,17 @@
   (wrapping-in-label))
 
 (define-ebnf-rule simple-signal-assignment
-  ("( name | aggregate ) <= [ delay-mechanism ] waveform ;"
-   "| name <= FORCE [ IN | OUT ] expression ; | name <= RELEASE [ IN | OUT ] ;"))
+    "really-simple-signal-assignment | force-simple-signal-assignment | release-simple-signal-assignment")
 
+(define-ebnf-rule really-simple-signal-assignment "( name | aggregate ) <= [ delay-mechanism ] waveform ;"
+  `(:<= ,1st ,@(if 3rd `(,3rd)) ,4th))
+  
+(define-ebnf-rule force-simple-signal-assignment "name <= FORCE [ IN | OUT ] expression ;"
+  `(:<= ,1st (:force ,@(if 4th `(,4th))) ,5th))
+
+(define-ebnf-rule release-simple-signal-assignment "name <= RELEASE [ IN | OUT ] ;"
+  `(:<= ,1st (:release ,@(if 4th `(,4th)))))
+  
 (define-ebnf-rule conditional-signal-assignment "conditional-waveform-assignment | conditional-force-assignment")
 
 (define-ebnf-rule conditional-waveform-assignment

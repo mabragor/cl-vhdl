@@ -33,7 +33,7 @@
   ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
    "GENERIC MAP (( ( GENERIC-association-list | <> | DEFAULT ) ))"))
 
-(define-ebnf-rule association-list "( [ format-part => ] actual-part ) {, ... }")
+(define-ebnf-rule association-list "( [ formal-part => ] actual-part ) {, ... }")
 
 (define-ebnf-rule formal-part
   ("GENERIC-name | PORT-name | PARAMETER-name | FUNCTION-name (( ( GENERIC-name | PORT-name | PARAMETER-name ) ))"
