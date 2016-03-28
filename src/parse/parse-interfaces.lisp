@@ -48,7 +48,66 @@
    "| _SUBPROGRAM-name | _PACKAGE-name | OPEN | FUNCTION-name (( ( SIGNAL-name | VARIABLE-name ) ))"
    "| type-mark (( ( SIGNAL-name | VARIABLE-name ) ))"))
 
+;; (%define-ebnf-rule actual-part
+;;     (|| (inertial-part) (name :signal) (name :variable) (name :file)
+;; 	(new (subtype-indication)) (new (name :subprogram)) (new (name :package))
+;; 	:open ((name :function) "(" (|| (name :signal) (name :variable)) ")")
+;; 	((type-mark) "(" (|| (name :signal) (name :variable)) ")")))
+
+
 (define-ebnf-rule inertial-part "_[ INERTIAL ] expression"
   (if 1st
       `(:inertial ,2nd)
       2nd))
+
+;; (PROGN
+ ;;  (UPDATE-GREEDY-CHAR-SEQ-TABLE "(")
+ ;; (UPDATE-GREEDY-CHAR-SEQ-TABLE ")")
+ ;; (UPDATE-GREEDY-CHAR-SEQ-TABLE "(")
+ ;; (UPDATE-GREEDY-CHAR-SEQ-TABLE ")")
+ ;; (MACROLET ((WH? (&BODY X)
+ ;;              `(PROGN (? whitespace) ,.X))
+ ;;            (NEW (X &OPTIONAL (Y NIL Y-P))
+ ;;              (IF Y-P
+ ;;                  `(IF (OR (NOT *VHDL-VERSION*) (<= ,X *VHDL-VERSION*))
+ ;;                       ,Y
+ ;;                       (FAIL-PARSE
+ ;;                        "Version we are trying to parse doesn't support this"))
+ ;;                  `(IF (OR (NOT *VHDL-VERSION*) (<= 2008 *VHDL-VERSION*))
+ ;;                       ,X))))
+ ;;   (DEFINE-VHDL-RULE ACTUAL-PART
+ ;;       (&OPTIONAL HINT)
+ ;;     (LET ((RES
+ ;;            (WH?
+ ;;             (MOST-FULL-PARSE (WH? (V INERTIAL-PART)) (WH? (V NAME :SIGNAL))
+ ;;                              (WH? (V NAME :VARIABLE)) (WH? (V NAME :FILE))
+ ;;                              (NEW (WH? (V SUBTYPE-INDICATION)))
+ ;;                              (NEW (WH? (V NAME :SUBPROGRAM)))
+ ;;                              (NEW (WH? (V NAME :PACKAGE)))
+ ;;                              (WH? (V CASE-INSENSITIVE-STRING "open")
+ ;;                               (! (CHARACTER-RANGES (#\a #\z) (#\A #\Z)))
+ ;;                               :OPEN)
+ ;;                              (WH?
+ ;;                               (LIST (WH? (V NAME :FUNCTION))
+ ;;                                     (WH? (V GREEDY-CHAR-SEQ "("))
+ ;;                                     (WH?
+ ;;                                      (MOST-FULL-PARSE (WH? (V NAME :SIGNAL))
+ ;;                                                       (WH?
+ ;;                                                        (V NAME :VARIABLE))))
+ ;;                                     (WH? (V GREEDY-CHAR-SEQ ")"))))
+ ;;                              (WH?
+ ;;                               (LIST (WH? (V TYPE-MARK))
+ ;;                                     (WH? (V GREEDY-CHAR-SEQ "("))
+ ;;                                     (WH?
+ ;;                                      (MOST-FULL-PARSE (WH? (V NAME :SIGNAL))
+ ;;                                                       (WH?
+ ;;                                                        (V NAME :VARIABLE))))
+ ;;                                     (WH? (V GREEDY-CHAR-SEQ ")"))))))))
+ ;;       (WITH-LIST-PLACES (RES)
+ ;;         RES)))))
+
+;; OK, now I understand very well, what is it that takes so much time to compile
+;; (and also a lot of memory)
+;; -- it's expansion of multiple (? whitespace) things that I have
+;; I need to think of a way to organize ESRAP in a way that such extensive macroexpansion
+;; is *unnecessary*

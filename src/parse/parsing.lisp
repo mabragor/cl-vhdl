@@ -381,8 +381,11 @@
 
 ;; We will change this to something meaningful later
 (defmacro define-ebnf-rule (name syntax &body body)
+  `(%define-ebnf-rule ,name ,(s-exp<-ebnf syntax) ,@body))
+
+(defmacro %define-ebnf-rule (name syntax &body body)
   (multiple-value-bind (liquid-body greedy-char-seqs)
-      (esrap-liquid-body (s-exp<-ebnf syntax))
+      (esrap-liquid-body syntax)
     `(progn ,@(mapcar (lambda (x)
 			`(update-greedy-char-seq-table ,x))
 		      greedy-char-seqs)
