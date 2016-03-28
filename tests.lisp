@@ -617,6 +617,8 @@
 ;; TODO : actually make the in-ports not to be constant -- I wonder how to do this at this level...
 (test entity-declaration
   (with-optima-frob (entity-declaration)
+    (frob '(:entity cl-vhdl::top-level)
+	  "entity top_level is end entity top_level;")
     (frob '(:entity cl-vhdl::adder (:port (:constant cl-vhdl::word nil :in cl-vhdl::a)
 				    (:constant cl-vhdl::word nil :in cl-vhdl::b)
 				    (:signal cl-vhdl::word nil :out cl-vhdl::sum)))
@@ -624,4 +626,39 @@
                port ( a : in word;
                       b : in word;
                       sum : out word );
-           end entity adder;")))
+           end entity adder;")
+    (frob '(:entity cl-vhdl::program-rom
+	    (:port (:constant (:compound cl-vhdl::std-ulogic-vector (:downto 14 0)) nil :in cl-vhdl::address)
+	     (:signal (:compound cl-vhdl::std-ulogic-vector (:downto 7 0)) nil :out cl-vhdl::data)
+	     (:constant cl-vhdl::std-ulogic nil :in cl-vhdl::enable))
+	    (:subtype cl-vhdl::instruction-byte (:compound cl-vhdl::bit-vector (:downto 7 0)))
+	    (:type cl-vhdl::program-array (:array cl-vhdl::instruction-byte (:to 0 (:- (:** 2 14) 1))))
+	    (:constant cl-vhdl::program-array (:aggregate (:bin "00110010") (:bin "00111111")
+					       (:bin "00000011") (:bin "01110001") (:bin "00100011"))
+	     cl-vhdl::program))
+	  "entity program_ROM is
+               port ( address : in std_ulogic_vector(14 downto 0);
+                      data : out std_ulogic_vector(7 downto 0);
+                      enable : in std_ulogic );
+               subtype instruction_byte is bit_vector(7 downto 0);
+               type program_array is
+                      array (0 to 2**14 - 1) of instruction_byte;
+               constant program : program_array -- := X\"33\";
+                 := ( X\"32\", X\"3F\", X\"03\",   -- LDA $3F03
+                      X\"71\", X\"23\");            -- BLT $23
+          end entity program_ROM;")
+    ))
+
+(test architecture-body
+  (with-optima-frob (architecture-body)
+    (frob (list :architecture 'cl-vhdl::abstract 'cl-vhdl::adder
+		(list :label 'cl-vhdl::add-a-b
+		      (list :process (list 'cl-vhdl::a 'cl-vhdl::b)
+			    _)))
+	  "architecture abstract of adder is
+           begin
+               add_a_b : process (a, b) is
+               begin
+                 sum <= a + b;
+               end process add_a_b;
+           end architecture abstract;")))

@@ -69,7 +69,8 @@
 				     "   { block-declarative-item }"
 				     "BEGIN"
 				     "   { concurrent-statement }"
-				     "END [ ARCHITECTURE ] [ identifier ] ;"))
+				     "END [ ARCHITECTURE ] [ identifier ] ;")
+  `(:architecture ,2nd ,4th ,@6th ,@8th))
 
 (define-ebnf-rule configuration-declaration ("CONFIGURATION identifier OF ENTITY-name IS"
 					     "   { use-clause | attribute-specification | group-declaration }"

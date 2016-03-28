@@ -72,7 +72,7 @@
 							"| group-template-declaration | group-declaration"))
 
 (define-ebnf-rule subtype-declaration "SUBTYPE identifier IS subtype-indication ;"
-  `(:subtype ,2nd ,@4th))
+  `(:subtype ,2nd ,@(if (keywordp (car 4th)) `(,4th) 4th)))
 
 (define-ebnf-rule subtype-indication (;; Clearly, the hints in BOLD are important for parsing not to be recursive
 				      ;; "[ resolution-indication ]"

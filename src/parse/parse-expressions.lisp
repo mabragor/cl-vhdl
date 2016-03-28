@@ -137,7 +137,7 @@
 			    "| NOR primary | XOR primary | XNOR primary"))
 
 (define-ebnf-rule primary
-  ("name | literal | aggregate | function-call | qualified-expression | type-mark (( expression ))"
+  ("literal | name | aggregate | function-call | qualified-expression | type-mark (( expression ))"
    "| NEW subtype-indication | NEW qualified-expression | parenthesized-expression"))
 
 (define-ebnf-rule parenthesized-expression "(( expression ))"
@@ -218,8 +218,8 @@
 (define-ebnf-rule package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier")
 
 (define-ebnf-rule literal
-  ("based-literal | physical-literal | decimal-literal | identifier"
-   "| character-literal | string-literal | bit-string-literal | NULL"))
+  ("bit-string-literal | based-literal | physical-literal | decimal-literal | identifier"
+   "| character-literal | string-literal | NULL"))
 
 (define-ebnf-rule aggregate "(( ( [ choices => ] expression ) {, ... } ))"
   `(:aggregate ,@(mapcar (lambda (x)

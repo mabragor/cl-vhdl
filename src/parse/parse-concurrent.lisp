@@ -30,10 +30,15 @@
 
 (define-ebnf-rule process-statement
   ("[ PROCESS-label : ] [ POSTPONED ] PROCESS [ ( (( SIGNAL-name {, ...} )) | ALL ) ] [ IS ]"
-   "    { process-declarative-item } BEGIN { sequential-statement } END [ POSTPONED ] PROCESS [ PROCESS-label ] ;"))
+   "    { process-declarative-item } BEGIN { sequential-statement } END [ POSTPONED ] PROCESS [ PROCESS-label ] ;")
+  (wrapping-in-label `(,(if 2nd :postponed-process :process)
+			,(if 4th (if (eq :all 4th)
+				     :all
+				     (cadr 4th)))
+			,@6th ,@8th)))
 
 (define-ebnf-rule process-declarative-item
-  ("subprogram-declarative | subprogram-body | _subprogram-instantiation-declaration"
+  ("subprogram-declaration | subprogram-body | _subprogram-instantiation-declaration"
    "| _package-declaration | _package-body | _package-instantiation-declaration"
    "| type-declaration | subtype-declaration | constant-declaration | variable-declaration"
    "| file-declaration | alias-declaration | attribute-declaration | attribute-specification | use-clause"
