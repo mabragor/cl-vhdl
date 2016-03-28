@@ -595,3 +595,21 @@
                         \"0010\" when \"001-\",
                         \"0001\" when \"0001\",
                         \"0000\" when others;")))
+
+(test record
+  (with-optima-frob (type-declaration)
+    (frob '(:type cl-vhdl::time-stamp (:record ((cl-vhdl::integer (:constraint (:range 0 59))) cl-vhdl::seconds)
+				       ((cl-vhdl::integer (:constraint (:range 0 59))) cl-vhdl::minutes)
+				       ((cl-vhdl::integer (:constraint (:range 0 23))) cl-vhdl::hours)))
+	  "type time_stamp is record
+               seconds : integer range 0 to 59;
+               minutes : integer range 0 to 59;
+               hours   : integer range 0 to 23;
+           end record time_stamp;"))
+  (with-optima-frob (variable-declaration)
+    (frob '(:variable (:compound cl-vhdl::test-vector (:paren (:compound cl-vhdl::stimulus (:to 0 7))
+						       (:compound cl-vhdl::response (:to 0 9))))
+	    nil cl-vhdl::next-test-vector)
+	  "variable next_test_vector : test_vector(stimulus(0 to 7),
+                                                   response(0 to 9));")
+    ))

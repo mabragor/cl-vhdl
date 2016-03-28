@@ -42,7 +42,10 @@
   `(:<> ,1st))
 
 (define-ebnf-rule record-type-definition ("RECORD ( identifier {, ...} : subtype-indication ; ) { ... }"
-					  "END RECORD [ identifier ]"))
+					  "END RECORD [ identifier ]")
+  `(:record ,@(mapcar (lambda (x)
+			`(,(caddr x) ,@(car x))) ; subtype first, names -- rest
+		      2nd)))
 
 (define-ebnf-rule access-type-definition "ACCESS subtype-indication")
 
