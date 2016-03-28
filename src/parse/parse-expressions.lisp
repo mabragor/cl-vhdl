@@ -156,13 +156,19 @@
   res)
 
 (define-ebnf-rule compound-name ("atomic-name name-tail { ... }")
-  (cons 1st 2nd))
+  `(:compound ,1st ,@2nd))
 
-(define-ebnf-rule name-tail ("(( expression {, ...} ))"
-			     "| (( discrete-range ))"
+(define-ebnf-rule name-tail ("parenthesized-compound-tail"
+			     "| discrete-range-tail"
 			     "| selected-tail"
 			     "| attribute-tail"
 			     "| funcall-tail"))
+
+(define-ebnf-rule parenthesized-compound-tail "(( expression {, ...} ))"
+  `(:paren ,@2nd))
+
+(define-ebnf-rule discrete-range-tail "(( discrete-range ))"
+  2nd)
 
 (define-ebnf-rule selected-tail ". ( atomic-name | ALL )"
   `(:dot ,2nd))

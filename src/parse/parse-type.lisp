@@ -35,7 +35,8 @@
 
 
 (define-ebnf-rule array-type-definition ("ARRAY (( ( type-mark RANGE <> ) {, ...} )) OF ELEMENT-subtype-indication"
-					 "| ARRAY (( discrete-range {, ...} )) OF ELEMENT-subtype-indication"))
+					 "| ARRAY (( discrete-range {, ...} )) OF ELEMENT-subtype-indication")
+  `(:array ,6th ,@3rd))
 
 (define-ebnf-rule record-type-definition ("RECORD ( identifier {, ...} : subtype-indication ; ) { ... }"
 					  "END RECORD [ identifier ]"))
@@ -86,7 +87,13 @@
 (define-ebnf-rule record-constraint
   "(( ( RECORD-ELEMENT-identifier ( array-constraint | record-constrant ) ) {, ... } ))")
 
-(define-ebnf-rule discrete-range "simple-discrete-range | DISCRETE-subtype-indication | RANGE-attribute-name")
+(define-ebnf-rule discrete-range "simple-discrete-range | subtype-range | attribute-range")
+
+(define-ebnf-rule subtype-range "DISCRETE-subtype-indication"
+  `(:subtype ,res))
+
+(define-ebnf-rule attribute-range "RANGE-attribute-name"
+  `(:attribute ,res))
 
 (define-ebnf-rule simple-discrete-range "simple-expression ( TO | DOWNTO ) simple-expression"
   `(,2nd ,1st ,3rd))

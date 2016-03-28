@@ -234,9 +234,9 @@
 
 (test use-clause
   (with-optima-frob (use-clause)
-    (frob (list :use (list 'cl-vhdl::work (list :dot 'cl-vhdl::int-types) (list :dot :all)))
+    (frob (list :use (list :compound 'cl-vhdl::work (list :dot 'cl-vhdl::int-types) (list :dot :all)))
 	  "use work.int_types.all;")
-    (frob (list :use (list 'cl-vhdl::ieee (list :dot 'cl-vhdl::std-logic-1164) (list :dot :all)))
+    (frob (list :use (list :compound 'cl-vhdl::ieee (list :dot 'cl-vhdl::std-logic-1164) (list :dot :all)))
 	  "use ieee.std_logic_1164.all;")
     ))
 
@@ -327,9 +327,9 @@
 
 (test attribute-name
   (with-optima-frob (attribute-name)
-    (frob (list 'cl-vhdl::logic-level (list :attribute 'cl-vhdl::value _))
+    (frob (list :compound 'cl-vhdl::logic-level (list :attribute 'cl-vhdl::value _))
 	  "logic_level'value(\"Low\")")
-    (frob (list 'cl-vhdl::arith-op
+    (frob (list :compound 'cl-vhdl::arith-op
 		(list :attribute 'cl-vhdl::base)
 		(list :attribute 'cl-vhdl::succ _))
 	  "arith_op'base'succ(negate)")
@@ -396,11 +396,11 @@
 
 (test case-statement
   (with-optima-frob (case-statement)
-    (frob '(:case cl-vhdl::func
-	    (cl-vhdl::pass1 (::= cl-vhdl::result cl-vhdl::operand1))
-	    (cl-vhdl::pass2 (::= cl-vhdl::result cl-vhdl::operand2))
-	    (cl-vhdl::add (::= cl-vhdl::result (:+ cl-vhdl::operand1 cl-vhdl::operand2)))
-	    (cl-vhdl::subtract (::= cl-vhdl::result (:- cl-vhdl::operand1 cl-vhdl::operand2))))
+    (frob (list :case 'cl-vhdl::func
+		(list _ (list ::= 'cl-vhdl::result 'cl-vhdl::operand1))
+		(list _ (list ::= 'cl-vhdl::result 'cl-vhdl::operand2))
+		(list _ (list ::= 'cl-vhdl::result (list :+ 'cl-vhdl::operand1 'cl-vhdl::operand2)))
+		(list _ (list ::= 'cl-vhdl::result (list :- 'cl-vhdl::operand1 'cl-vhdl::operand2))))
 	  "case func is
                when pass1 =>
                    result := operand1;
@@ -415,7 +415,7 @@
 
 (test choices
   (with-optima-frob (choices)
-    (frob '(:|| cl-vhdl::load cl-vhdl::add cl-vhdl::subtract)
+    (frob (list :|| _ _ _)
 	  "load | add | subtract")
     (frob '(:to cl-vhdl::add cl-vhdl::load)
 	  "add to load")
@@ -427,10 +427,10 @@
 
 (test selected-variable-assignment
   (with-optima-frob (selected-variable-assignment)
-    (frob '(::= cl-vhdl::result (:select (cl-vhdl::pass1 cl-vhdl::operand1)
-				 (cl-vhdl::pass2 cl-vhdl::operand2)
-				 (cl-vhdl::add (:+ cl-vhdl::operand1 cl-vhdl::operand2))
-				 (cl-vhdl::subtract (:- cl-vhdl::operand1 cl-vhdl::operand2))))
+    (frob (list ::= 'cl-vhdl::result (list :select (list _ 'cl-vhdl::operand1)
+					   (list _ 'cl-vhdl::operand2)
+					   (list _ (list :+ 'cl-vhdl::operand1 'cl-vhdl::operand2))
+					   (list _ (list :- 'cl-vhdl::operand1 'cl-vhdl::operand2))))
 	  "with func select
                result := operand1            when pass1,
                          operand2            when pass2,
@@ -501,3 +501,23 @@
 	  "report \"low on memory, about to start garbage collect\"
              severity note;")
     ))
+
+(test array-type-definition
+  (with-optima-frob (array-type-definition)
+    (frob '(:array cl-vhdl::bit (:to 0 31))
+	  "array (0 to 31) of bit")
+    (frob '(:array cl-vhdl::natural (:to cl-vhdl::idle cl-vhdl::error))
+	  "array (idle to error) of natural")
+    (frob '(:array cl-vhdl::natural (:subtype (cl-vhdl::controller-state (:constraint (:range cl-vhdl::idle
+											      cl-vhdl::error)))))
+	  "array (controller_state range idle to error) of natural")
+    (frob '(:array cl-vhdl::real (:subtype cl-vhdl::coeff-ram-address))
+	  "array (coeff_ram_address) of real")
+    ))
+
+(test simple-variable-assignment-2
+  (with-optima-frob (simple-variable-assignment)
+    (frob '(::= (:compound cl-vhdl::counters (:paren cl-vhdl::active)) (:+ (:compound cl-vhdl::counters
+									    (:paren cl-vhdl::active))
+									1))
+	  "counters(active) := counters(active) + 1;")))
