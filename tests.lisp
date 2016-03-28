@@ -662,3 +662,8 @@
                  sum <= a + b;
                end process add_a_b;
            end architecture abstract;")))
+
+(test simple-signal-assignment
+  (with-optima-frob (simple-signal-assignment)
+    (frob nil
+	  "y <= not or_a_b after 5 ns;")))
