@@ -3,13 +3,6 @@
 
 ;;; Sequential Statements
 
-(defmacro wrapping-in-label (&optional (expr `(cdr res)))
-  (with-gensyms (g!-it)
-    `(let ((,g!-it ,expr))
-       (if 1st
-	   `(:label ,(car 1st) ,,g!-it)
-	   ,g!-it))))
-
 (define-ebnf-rule sequential-statement
   ("wait-statement | assertion-statement | report-statement | signal-assignment-statement"
    "| variable-assignment-statement | procedure-call-statement | if-statement | case-statement"

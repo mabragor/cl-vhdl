@@ -175,7 +175,7 @@
 (define-ebnf-rule attribute-tail "[ signature ] ' identifier [ (( expression )) ]"
   `(:attribute ,3rd ,@(if 1st `((:signature ,1st))) ,@(if 4th `(,(cadr 4th)))))
 (define-ebnf-rule funcall-tail "(( PARAMETER-association-list ))"
-  `(:call ,@2nd))
+  `(:paren ,@2nd))
 
 (define-ebnf-rule selected-name "compound-name"
   (if (not (eq :dot (caar (last res))))
@@ -187,8 +187,7 @@
       res))
 
 (define-ebnf-rule function-call "compound-name"
-  ;; TODO : how to make a finer-grained check here?
-  (if (not (string= "(" (cadar (last res))))
+  (if (not (eq :paren (caar (last res))))
       (fail-parse "Not a function call")
       res))
   

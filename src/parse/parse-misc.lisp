@@ -2,7 +2,10 @@
 (in-package #:cl-vhdl)
 
 (define-ebnf-rule physical-literal "[ decimal-literal | based-literal ] UNIT-name"
-  `(,2nd ,(or 1st 1)))
+  ;; At this lexical stage of parsing we can't tell whether something is a unit or a variable name
+  (if (not 1st)
+      (fail-parse "Implicit physical literals can't be resolved at this stage.")
+      `(,2nd ,1st)))
 
 (define-vhdl-rule decimal-literal () (v dec-number-literal))
 (define-vhdl-rule based-literal () (v explicit-base-number-literal))

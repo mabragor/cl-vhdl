@@ -525,4 +525,10 @@
 ;; 	;; #\;
 ;; 	)))
 
-  
+(defmacro wrapping-in-label (&optional (expr `(cdr res)))
+  (with-gensyms (g!-it)
+    `(let ((,g!-it ,expr))
+       (if 1st
+	   `(:label ,(car 1st) ,,g!-it)
+	   ,g!-it))))
+

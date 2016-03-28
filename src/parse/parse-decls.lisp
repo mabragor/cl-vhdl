@@ -79,7 +79,7 @@
       `(:type ,2nd ,4th)
       res))
 
-(define-ebnf-rule type-definition ("physical-type-definition | integer-type-definition | floating-type-definition"
+(define-ebnf-rule type-definition ("physical-type-definition | int-or-float-type-definition"
 				   "| array-type-definition | record-type-definition"
 				   "| access-type-definition | file-type-definition"
 				   "| protected-type-body | protected-type-declaration"

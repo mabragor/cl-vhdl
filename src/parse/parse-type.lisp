@@ -12,9 +12,12 @@
        `(:range ,(car 2nd) ,(caddr 2nd))
        res))
 
-(define-ebnf-rule integer-type-definition "range-definition"
+(define-ebnf-rule int-or-float-type-definition "range-definition"
   (if (< 2 (length res))
-      (cons :integer (cdr res))
+      (cons (cond ((and (integerp (cadr res)) (integerp (caddr res))) :integer)
+		  ((and (numberp (cadr res)) (numberp (caddr res))) :float)
+		  (t :int-or-float))
+	    (cdr res))
       res))
   
 (define-ebnf-rule floating-type-definition "range-definition"

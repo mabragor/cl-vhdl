@@ -250,7 +250,7 @@
 
 (test physical-literal
   (with-optima-frob (physical-literal)
-    (frob (list 'cl-vhdl::ohm 1) "ohm")
+    (signals (esrap-liquid::simple-esrap-error) (vhdl-parse 'physical-literal "ohm"))
     (frob (list 'cl-vhdl::ohm 2) "2 ohm")))
 
 (test library-clause
@@ -519,12 +519,14 @@
 
 (test simple-variable-assignment-2
   (with-optima-frob (simple-variable-assignment)
-    (frob '(::= (:compound cl-vhdl::counters (:paren cl-vhdl::active)) (:+ (:compound cl-vhdl::counters
-									    (:paren cl-vhdl::active))
-									1))
+    (frob (list ::= (list :compound 'cl-vhdl::counters
+			  (list _ 'cl-vhdl::active))
+		(list :+ (list :compound 'cl-vhdl::counters
+			       (list _ 'cl-vhdl::active))
+		      1))
 	  "counters(active) := counters(active) + 1;"))
   (with-optima-frob (name)
-    (frob '(:compound cl-vhdl::transition-table (:paren 5 #\d))
+    (frob (list :compound 'cl-vhdl::transition-table (list _ 5 #\d))
 	  "transition_table(5, 'd')")
     ))
 
@@ -607,9 +609,10 @@
                hours   : integer range 0 to 23;
            end record time_stamp;"))
   (with-optima-frob (variable-declaration)
-    (frob '(:variable (:compound cl-vhdl::test-vector (:paren (:compound cl-vhdl::stimulus (:to 0 7))
-						       (:compound cl-vhdl::response (:to 0 9))))
-	    nil cl-vhdl::next-test-vector)
+    (frob (list :variable (list :compound 'cl-vhdl::test-vector
+				(list _ '(:compound cl-vhdl::stimulus (:to 0 7))
+				      '(:compound cl-vhdl::response (:to 0 9))))
+		nil 'cl-vhdl::next-test-vector)
 	  "variable next_test_vector : test_vector(stimulus(0 to 7),
                                                    response(0 to 9));")
     ))
@@ -619,18 +622,18 @@
   (with-optima-frob (entity-declaration)
     (frob '(:entity cl-vhdl::top-level)
 	  "entity top_level is end entity top_level;")
-    (frob '(:entity cl-vhdl::adder (:port (:constant cl-vhdl::word nil :in cl-vhdl::a)
-				    (:constant cl-vhdl::word nil :in cl-vhdl::b)
-				    (:signal cl-vhdl::word nil :out cl-vhdl::sum)))
+    (frob '(:entity cl-vhdl::adder (:port (:sig-var-con cl-vhdl::word nil :in cl-vhdl::a)
+				    (:sig-var-con cl-vhdl::word nil :in cl-vhdl::b)
+				    (:sig-var-con cl-vhdl::word nil :out cl-vhdl::sum)))
 	  "entity adder is
                port ( a : in word;
                       b : in word;
                       sum : out word );
            end entity adder;")
     (frob '(:entity cl-vhdl::program-rom
-	    (:port (:constant (:compound cl-vhdl::std-ulogic-vector (:downto 14 0)) nil :in cl-vhdl::address)
-	     (:signal (:compound cl-vhdl::std-ulogic-vector (:downto 7 0)) nil :out cl-vhdl::data)
-	     (:constant cl-vhdl::std-ulogic nil :in cl-vhdl::enable))
+	    (:port (:sig-var-con (:compound cl-vhdl::std-ulogic-vector (:downto 14 0)) nil :in cl-vhdl::address)
+	     (:sig-var-con (:compound cl-vhdl::std-ulogic-vector (:downto 7 0)) nil :out cl-vhdl::data)
+	     (:sig-var-con cl-vhdl::std-ulogic nil :in cl-vhdl::enable))
 	    (:subtype cl-vhdl::instruction-byte (:compound cl-vhdl::bit-vector (:downto 7 0)))
 	    (:type cl-vhdl::program-array (:array cl-vhdl::instruction-byte (:to 0 (:- (:** 2 14) 1))))
 	    (:constant cl-vhdl::program-array (:aggregate (:bin "00110010") (:bin "00111111")
