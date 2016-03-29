@@ -313,7 +313,15 @@
 (test wait-statement
   (with-optima-frob (wait-statement)
     (frob (list :wait (list :until _))
-	  "wait until clk;")))
+	  "wait until clk;")
+    (frob '(:wait (:on cl-vhdl::a cl-vhdl::b))
+	  "wait on a, b;")
+    (frob '(:wait (:on cl-vhdl::clk) (:until (:not cl-vhdl::reset)))
+	  "wait on clk until not reset;")
+    (frob '(:wait (:until cl-vhdl::trigger) (:for (cl-vhdl::ms 1)))
+	  "wait until trigger for 1 ms;")
+    (frob '(:wait) "wait;")
+    ))
 
 (test subtype-declaration
   (with-optima-frob (subtype-declaration)
