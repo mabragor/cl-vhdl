@@ -48,7 +48,14 @@
   "[ label : ] [ POSTPONED ] PROCEDURE-name [ (( PARAMETER-association-list )) ] ;")
 
 (define-ebnf-rule concurrent-assertion-statement
-  "[ label : ] [ POSTPONED ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;")
+    "[ label : ] [ POSTPONED ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;"
+  (wrapping-in-label (let ((it `(:assert ,4th
+					 ,@(if 5th `(,5th))
+					 ,@(if 6th `(,6th)))))
+		       (if 2nd
+			   `(:postponed ,it)
+			   it))))
+
 
 (define-ebnf-rule concurrent-signal-assignment-statement
     ("[ label : ] [ POSTPONED ] concurrent-simple-signal-assignment"
@@ -85,7 +92,13 @@
 (define-ebnf-rule component-instantiation-statement
   ("INSTANTIATION-label : ( [ COMPONENT ] COMPONENT-name | ENTITY ENTITY-name [ (( ARCHITECTURE-identifier )) ]"
    "    | CONFIGURATION CONFIGURATION-name )"
-   "    [ GENERIC MAP (( GENERIC-association-list )) ] [ PORT MAP (( PORT-association-list )) ] ;"))
+   "    [ GENERIC MAP (( GENERIC-association-list )) ] [ PORT MAP (( PORT-association-list )) ] ;")
+  `(:instance ,1st ,(cond ((eq :entity (car 3rd))
+			   `(:entity ,(cadr 3rd) ,@(if (caddr 3rd) `(,(cadr (cadr 3rd))))))
+			  ((eq :configuration (car 3rd)) 3rd)
+			  (t `(:component ,(cadr 3rd))))
+	      ,@(if 4th `((:generic-map ,@(cadddr 4th))))
+	      ,@(if 5th `((:port-map ,@(cadddr 5th))))))
 
 (define-ebnf-rule generate-statement ("for-generate-statement | if-generate-statement | _case-generate-statement"))
 

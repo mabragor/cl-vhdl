@@ -789,3 +789,61 @@
                              a and b after Tpd when alu_and,
                              a or b after Tpd  when alu_or,
                              a after Tpd       when alu_pass_a;")))
+
+(test concurrent-assert
+  (with-optima-frob (concurrent-assertion-statement)
+    (frob '(:label cl-vhdl::check
+	    (:assert (:not (:and cl-vhdl::s cl-vhdl::r))
+	     (:report (:& "Incorrect use of S_R_flip_flop: " "s and r both '1'"))))
+	  "check : assert not (s and r)
+                     report \"Incorrect use of S_R_flip_flop: \" &
+                            \"s and r both '1'\";")))
+
+(test passive-processes
+  (with-optima-frob (entity-declaration)
+    (frob '(:entity cl-vhdl::s-r-flipflop
+		   (:port (:sig-var-con bit nil :in cl-vhdl::s cl-vhdl::r)
+			  (:sig-var-con bit nil :out cl-vhdl::q cl-vhdl::q-n))
+		   (:label cl-vhdl::check
+			   (:assert (:not (:and cl-vhdl::s cl-vhdl::r))
+				    (:report (:& "Incorrect use of S_R_flip_flop: " "s and r both '1'")))))
+	  "entity S_R_flipflop is
+             port ( s, r : in bit; q, q_n : out bit );
+
+           begin
+             check : assert not (s and r)
+                       report \"Incorrect use of S_R_flip_flop: \" &
+                              \"s and r both '1'\";
+           end entity S_R_flipflop;")))
+                         
+(test component-instantiation-statement
+  (with-optima-frob (component-instantiation-statement)
+    (frob '(:instance cl-vhdl::main-mem-controller
+	    (:entity
+	     (:compound cl-vhdl::work (:dot cl-vhdl::dram-controller)
+	      (:paren cl-vhdl::fpld)))
+	    (:port-map cl-vhdl::cpu-rd cl-vhdl::cpu-wr cl-vhdl::cpu-mem cl-vhdl::mem-ras
+	     cl-vhdl::mem-cas cl-vhdl::mem-we cl-vhdl::cpu-rdy))
+	  "main_mem_controller : entity work.DRAM_controller(fpld)
+             port map ( cpu_rd, cpu_wr, cpu_mem, mem_ras, mem_cas, mem_we, cpu_rdy );")
+    (frob '(:instance cl-vhdl::main-mem-controller
+	    (:entity
+	     (:compound cl-vhdl::work (:dot cl-vhdl::dram-controller)
+	      (:paren cl-vhdl::fpld)))
+	    (:port-map (:=> cl-vhdl::rd cl-vhdl::cpu-rd) (:=> cl-vhdl::wr cl-vhdl::cpu-wr)
+	     (:=> cl-vhdl::mem cl-vhdl::cpu-mem) (:=> cl-vhdl::ready cl-vhdl::cpu-rdy)
+	     (:=> cl-vhdl::ras cl-vhdl::mem-ras) (:=> cl-vhdl::cas cl-vhdl::mem-cas)
+	     (:=> cl-vhdl::we cl-vhdl::mem-we)))
+	  "main_mem_controller : entity work.DRAM_controller(fpld)
+             port map ( rd => cpu_rd, wr => cpu_wr,
+                        mem => cpu_mem, ready => cpu_rdy,
+                        ras => mem_ras, cas => mem_cas, we => mem_we );")
+    (frob '(:instance cl-vhdl::f-cell (:entity (:compound cl-vhdl::work (:dot cl-vhdl::and-or-inv)))
+	    (:port-map (:=> cl-vhdl::a1 cl-vhdl::a) (:=> cl-vhdl::a2 cl-vhdl::b)
+	     (:=> cl-vhdl::b1 cl-vhdl::c) (:=> cl-vhdl::b2 :open)
+	     (:=> cl-vhdl::y cl-vhdl::f)))
+	  "f_cell : entity work.and_or_inv
+             port map ( a1 => A, a2 => B, b1 => C, b2 => open, y => F );")
+    ))
+
+;; (test 
