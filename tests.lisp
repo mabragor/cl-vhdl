@@ -846,4 +846,18 @@
              port map ( a1 => A, a2 => B, b1 => C, b2 => open, y => F );")
     ))
 
-;; (test 
+(test context-declaration
+  (with-optima-frob (context-declaration)
+    (frob '(:context cl-vhdl::widget-context (:library cl-vhdl::ieee)
+	    (:use (:compound cl-vhdl::ieee (:dot cl-vhdl::std-logic-1164) (:dot :all)))
+	    (:use (:compound cl-vhdl::widget-lib (:dot :all))))
+	  "context widget_context is
+             library ieee;
+             use ieee.std_logic_1164.all;
+             use widget_lib.all;
+           end context widget_context;")))
+
+(test context-reference
+  (with-optima-frob (context-reference)
+    (frob '(:context (:compound cl-vhdl::widget-lib (:dot cl-vhdl::widget-context)))
+	  "context widget_lib.widget_context;")))

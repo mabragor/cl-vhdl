@@ -19,7 +19,8 @@
 (define-ebnf-rule library-clause "LIBRARY identifier {, ... } ;"
   `(:library ,@2nd))
 
-(define-ebnf-rule context-reference "CONTEXT selected-name {, ... };")
+(define-ebnf-rule context-reference "CONTEXT selected-name {, ... };"
+  `(:context ,@2nd))
 
 
 ;;; Library unit declarations
@@ -92,6 +93,8 @@
 
 (define-ebnf-rule context-declaration ("CONTEXT identifier IS"
 				       "    { library-clause | use-clause | context-reference }"
-				       "END [ CONTEXT ] [ identifier ] ;"))
+				       "END [ CONTEXT ] [ identifier ] ;")
+  `(:context ,2nd
+	     ,@4th))
 
 
