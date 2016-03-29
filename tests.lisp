@@ -281,20 +281,20 @@
            else
                operand := address_operand;
            end if;")
-    (frob (list :cond (list (list := 'cl-vhdl::opcode 'cl-vhdl::halt-opcode)
-			    (list ::= 'cl-vhdl::pc 'cl-vhdl::effective-address)
-			    (list ::= 'cl-vhdl::executing 'cl-vhdl::false)
-			    _))
+    (frob '(:cond ((:= cl-vhdl::opcode cl-vhdl::halt-opcode)
+		   (::= cl-vhdl::pc cl-vhdl::effective-address)
+		   (::= cl-vhdl::executing cl-vhdl::false)
+		   (:<= cl-vhdl::halt-indicator (:waveform (cl-vhdl::true)))))
 	  "if opcode = halt_opcode then
                PC := effective_address;
                executing := false;
                halt_indicator <= true;
            end if;")
-    (frob (list :cond (list (list := 'cl-vhdl::phase 'cl-vhdl::wash)
-			    (list :cond (list (list := 'cl-vhdl::cycle-select 'cl-vhdl::delicate-cycle)
-					      _)
-				  (list t (list _)))
-			    _))
+    (frob '(:cond ((:= cl-vhdl::phase cl-vhdl::wash)
+		   (:cond ((:= cl-vhdl::cycle-select cl-vhdl::delicate-cycle)
+			   (:<= cl-vhdl::agitator-speed (:waveform (cl-vhdl::slow))))
+			  (t (:<= cl-vhdl::agitator-speed (:waveform (cl-vhdl::fast)))))
+		   (:<= cl-vhdl::agitator-on (:waveform (cl-vhdl::true)))))
 	  "if phase = wash then
                if cycle_select = delicate_cycle then
                    agitator_speed <= slow;
@@ -698,7 +698,7 @@
 
 (test selected-signal-assignment
   (with-optima-frob (selected-signal-assignment)
-    (frob '(:<= cl-vhdl::q (:select ("00" (:waveform (cl-vhdl::source0)))
+    (frob '(:<= cl-vhdl::q (:select cl-vhdl::d-sel ("00" (:waveform (cl-vhdl::source0)))
 			    ("01" (:waveform (cl-vhdl::source1))) ("10" (:waveform (cl-vhdl::source2)))
 			    ("11" (:waveform (cl-vhdl::source3)))))
 	  "with d_sel select
@@ -706,7 +706,8 @@
                   source1 when \"01\",
                   source2 when \"10\",
                   source3 when \"11\";")
-    (frob '(:<= cl-vhdl::grant (:select? ("1---" (:waveform ("1000"))) ("01--" (:waveform ("0100")))
+    (frob '(:<= cl-vhdl::grant (:select? cl-vhdl::request
+				("1---" (:waveform ("1000"))) ("01--" (:waveform ("0100")))
 				("001-" (:waveform ("0010"))) ("0001" (:waveform ("0001")))
 				(:others (:waveform ("0000")))))
 	  "with request select?
@@ -716,3 +717,75 @@
                       \"0001\" when \"0001\",
                       \"0000\" when others;")
     ))
+
+(test delayed-signal-assignments
+  (with-optima-frob (signal-assignment-statement)
+    (frob '(:<= cl-vhdl::line-out :transport (:waveform (cl-vhdl::line-in (:after (cl-vhdl::ps 500)))))
+	  "line_out <= transport line_in after 500 ps;")
+    (frob '(:<= cl-vhdl::y (:inertial (cl-vhdl::ns 2)) (:waveform ((:not cl-vhdl::a) (:after (cl-vhdl::ns 3)))))
+	  "y <= reject 2 ns inertial not a after 3 ns;")
+    ))
+
+(test architecture-body-2
+  (with-optima-frob (architecture-body)
+    (frob '(:architecture cl-vhdl::rtl cl-vhdl::dff
+	    (:label cl-vhdl::ff (:process (cl-vhdl::clk)
+				 (:cond (cl-vhdl::clk (:<= cl-vhdl::q (:waveform (cl-vhdl::d)))))))
+	    (:<= cl-vhdl::q-n (:waveform ((:not cl-vhdl::q)))))
+	  "architecture rtl of Dff is
+           begin
+             ff : process (clk) is
+             begin
+               if clk then
+                 q <= d;
+               end if;
+             end process ff;
+             q_n <= not q;
+           end architecture rtl;")
+    ))
+       
+(test concurrent-conditional-signal-assignment
+  (with-optima-frob (concurrent-signal-assignment-statement)
+    (frob '(:label cl-vhdl::zmux
+	    (:<= cl-vhdl::z
+	     (:when
+		 ((:and (:not cl-vhdl::sel1) (:not cl-vhdl::sel0)) (:waveform (cl-vhdl::d0)))
+	       ((:and (:not cl-vhdl::sel1) cl-vhdl::sel0) (:waveform (cl-vhdl::d1)))
+	       ((:and cl-vhdl::sel1 (:not cl-vhdl::sel0)) (:waveform (cl-vhdl::d2)))
+	       ((:and cl-vhdl::sel1 cl-vhdl::sel0) (:waveform (cl-vhdl::d3))))))
+	  "zmux : z <= d0 when not sel1 and not sel0 else
+                       d1 when not sel1 and     sel0 else
+                       d2 when     sel1 and not sel0 else
+                       d3 when     sel1 and     sel0;")
+    (frob '(:label cl-vhdl::zmux
+	    (:<= cl-vhdl::z
+	     (:when
+		 ((:and (:not cl-vhdl::sel1) (:not cl-vhdl::sel0)) (:waveform (cl-vhdl::d0)))
+	       ((:and (:not cl-vhdl::sel1) cl-vhdl::sel0) (:waveform (cl-vhdl::d1)))
+	       ((:and cl-vhdl::sel1 (:not cl-vhdl::sel0)) (:waveform (cl-vhdl::d2)))
+	       (t (:waveform (cl-vhdl::d3))))))
+	  "zmux : z <= d0 when not sel1 and not sel0 else
+                       d1 when not sel1 and     sel0 else
+                       d2 when     sel1 and not sel0 else
+                       d3;")
+    ))
+
+(test concurrent-selected-signal-assignment
+  (with-optima-frob (concurrent-signal-assignment-statement)
+    (frob '(:label cl-vhdl::alu (:<= cl-vhdl::result
+				 (:select cl-vhdl::alu-function
+				  ((:|| cl-vhdl::alu-add cl-vhdl::alu-add-unsigned)
+				   (:waveform ((:+ cl-vhdl::a cl-vhdl::b) (:after cl-vhdl::tpd))))
+				  ((:|| cl-vhdl::alu-sub cl-vhdl::alu-sub-unsigned)
+				   (:waveform ((:- cl-vhdl::a cl-vhdl::b) (:after cl-vhdl::tpd))))
+				  (cl-vhdl::alu-and
+				   (:waveform ((:and cl-vhdl::a cl-vhdl::b) (:after cl-vhdl::tpd))))
+				  (cl-vhdl::alu-or
+				   (:waveform ((:or cl-vhdl::a cl-vhdl::b) (:after cl-vhdl::tpd))))
+				  (cl-vhdl::alu-pass-a (:waveform (cl-vhdl::a (:after cl-vhdl::tpd)))))))
+	  "alu : with alu_function select
+                   result <= a + b after Tpd   when alu_add | alu_add_unsigned,
+                             a - b after Tpd   when alu_sub | alu_sub_unsigned,
+                             a and b after Tpd when alu_and,
+                             a or b after Tpd  when alu_or,
+                             a after Tpd       when alu_pass_a;")))

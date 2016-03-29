@@ -51,18 +51,36 @@
   "[ label : ] [ POSTPONED ] ASSERT condition [ REPORT expression ] [ SEVERITY expression ] ;")
 
 (define-ebnf-rule concurrent-signal-assignment-statement
-  "[ label : ] [ POSTPONED ] concurrent-simple-signal-assignment"
-  "| [ label : ] [ POSTPONED ] concurrent-conditional-signal-assignment"
-  "| [ label : ] [ POSTPONED ] concurrent-selected-signal-assignment")
+    ("[ label : ] [ POSTPONED ] concurrent-simple-signal-assignment"
+     "| [ label : ] [ POSTPONED ] concurrent-conditional-signal-assignment"
+     "| [ label : ] [ POSTPONED ] concurrent-selected-signal-assignment")
+  (wrapping-in-label (if 2nd `(:postponed ,3rd) 3rd)))
 
-(define-ebnf-rule concurrent-simple-signal-assignment "[ GUARDED ] [ delay-mechanism ] waveform ;")
+(define-ebnf-rule concurrent-simple-signal-assignment "target <= [ GUARDED ] [ delay-mechanism ] waveform ;"
+  `(:<= ,1st ,@(if 3rd `(,3rd)) ,@(if 4th `(,4th)) ,5th))
 
 (define-ebnf-rule concurrent-conditional-signal-assignment
-  "[ GUARDED ] [ delay-mechanism ] waveform WHEN condition { ELSE waveform WHEN condition } [ ELSE waveform ] ;")
+    ("target <= [ GUARDED ] [ delay-mechanism ] waveform WHEN condition"
+     "{ ELSE waveform WHEN condition } [ ELSE waveform ] ;")
+  `(:<= ,1st ,@(if 3rd `(,3rd)) ,@(if 4th `(,4th)) (:when (,7th ,5th)
+						     ,@(mapcar (lambda (x)
+								 `(,(cadddr x) ,(cadr x)))
+							       8th)
+						     ,@(if 9th `((t ,(cadr 9th)))))))
+
+(define-ebnf-rule target "name")
 
 (define-ebnf-rule concurrent-selected-signal-assignment
   ("WITH expression SELECT _[ ? ] target <= [ GUARDED ] [ delay-mechanism ]"
-   "    { waveform WHEN choices , } waveform WHEN choices ;"))
+   "    { waveform WHEN choices , } waveform WHEN choices ;")
+  `(:<= ,5th ,@(if 7th `(,7th)) ,@(if 8th `(,8th)) (,(if 4th :select? :select)
+						     ,2nd
+						     ,@(mapcar (lambda (x)
+								 `(,(caddr x) ,(car x)))
+							       9th)
+						     ;; NTH has a shift of index by one
+						     (,(nth 11 res) ,10th))))
+
 
 (define-ebnf-rule component-instantiation-statement
   ("INSTANTIATION-label : ( [ COMPONENT ] COMPONENT-name | ENTITY ENTITY-name [ (( ARCHITECTURE-identifier )) ]"

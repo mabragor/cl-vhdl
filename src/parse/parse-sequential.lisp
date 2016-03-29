@@ -28,7 +28,7 @@
 (define-ebnf-rule signal-assignment-statement
   ("[ label : ] simple-signal-assignment | [ label : ] conditional-signal-assignment"
    "| [ label : ] selected-signal-assignment")
-  (wrapping-in-label))
+  (wrapping-in-label 2nd))
 
 (define-ebnf-rule simple-signal-assignment
     "really-simple-signal-assignment | force-simple-signal-assignment | release-simple-signal-assignment")
@@ -64,6 +64,7 @@
   ("[ label : ] WITH expression SELECT [ ? ] ( name | aggregate ) <= [ delay-mechanism ]"
    "{ waveform WHEN choices , } waveform WHEN choices ;")
   (wrapping-in-label `(:<= ,6th ,@(if 8th `(,8th)) (,(if 5th :select? :select)
+						     ,3rd
 						     ,@(mapcar (lambda (x)
 								 `(,(caddr x) ,(car x)))
 							       9th)
@@ -76,7 +77,10 @@
    "{ expression WHEN choices , } expression WHEN choices ;")
   (wrapping-in-label))
 
-(define-ebnf-rule delay-mechanism "TRANSPORT | [ REJECT TIME-expression ] INERTIAL")
+(define-ebnf-rule delay-mechanism "TRANSPORT | [ REJECT TIME-expression ] INERTIAL"
+  (if (and (consp res) (< 1 (length res)))
+      `(:inertial ,@(if 1st `(,(cadr 1st))))
+      res))
 
 (define-ebnf-rule waveform
     "( VALUE-expression [ AFTER TIME-expression ] | NULL [ AFTER TIME-expression ] ) {, ...} | UNAFFECTED"
