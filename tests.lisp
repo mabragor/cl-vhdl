@@ -668,5 +668,43 @@
 
 (test simple-signal-assignment
   (with-optima-frob (simple-signal-assignment)
-    (frob nil
-	  "y <= not or_a_b after 5 ns;")))
+    (frob '(:<= cl-vhdl::y (:waveform ((:not cl-vhdl::or-a-b) (:after (cl-vhdl::ns 5)))))
+	  "y <= not or_a_b after 5 ns;")
+    (frob '(:<= cl-vhdl::clk (:waveform (#\1 (:after cl-vhdl::t-pw)) (#\0 (:after (:* 2 cl-vhdl::t-pw)))))
+	  "clk <= '1' after T_pw, '0' after 2*T_pw;")
+    (frob '(:<= cl-vhdl::device-req (:waveform :unaffected))
+	  "device_req <= unaffected;")
+    ))
+
+(test conditional-signal-assignment
+  (with-optima-frob (conditional-signal-assignment)
+    (frob '(:<= cl-vhdl::q (:when (cl-vhdl::reset (:waveform ((:aggregate (:=> :others #\0)))))
+			     (t (:waveform (cl-vhdl::d)))))
+	  "q <= (others => '0') when reset else d;")
+    (frob '(:<= cl-vhdl::req (:when (cl-vhdl::fixed-delay-mode (:waveform (#\1) (#\0 (:after cl-vhdl::t-fixed))))
+			       (t (:waveform (#\1) (#\0 (:after (:compound cl-vhdl::next-random-delay
+									   (:paren cl-vhdl::ran-seed))))))))
+	  "req <= '1', '0' after T_fixed when fixed_delay_mode else
+                  '1', '0' after next_random_delay(ran_seed);")
+    ))
+
+(test selected-signal-assignment
+  (with-optima-frob (selected-signal-assignment)
+    (frob '(:<= cl-vhdl::q (:select ("00" (:waveform (cl-vhdl::source0)))
+			    ("01" (:waveform (cl-vhdl::source1))) ("10" (:waveform (cl-vhdl::source2)))
+			    ("11" (:waveform (cl-vhdl::source3)))))
+	  "with d_sel select
+             q <= source0 when \"00\",
+                  source1 when \"01\",
+                  source2 when \"10\",
+                  source3 when \"11\";")
+    (frob '(:<= cl-vhdl::grant (:select? ("1---" (:waveform ("1000"))) ("01--" (:waveform ("0100")))
+				("001-" (:waveform ("0010"))) ("0001" (:waveform ("0001")))
+				(:others (:waveform ("0000")))))
+	  "with request select?
+             grant <= \"1000\" when \"1---\",
+                      \"0100\" when \"01--\",
+                      \"0010\" when \"001-\",
+                      \"0001\" when \"0001\",
+                      \"0000\" when others;")
+    ))

@@ -31,6 +31,8 @@
 		comment))
   #\space)
 
+(define-vhdl-rule maybe-whitespace ()
+  (? whitespace) nil)
 
 (define-vhdl-rule identifier ()
   (if (find *vhdl-version* '(87) :test #'equal)
@@ -389,7 +391,7 @@
     `(progn ,@(mapcar (lambda (x)
 			`(update-greedy-char-seq-table ,x))
 		      greedy-char-seqs)
-	    (macrolet ((wh? (&body x) `(progn (? whitespace) ,@x))
+	    (macrolet ((wh? (&body x) `(progn (v maybe-whitespace) ,.x))
 		       (new (x &optional (y nil y-p))
 			 (if y-p
 			     `(if (or (not *vhdl-version*)

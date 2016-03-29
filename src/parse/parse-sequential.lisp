@@ -47,7 +47,11 @@
 (define-ebnf-rule conditional-waveform-assignment
   ("[ label : ] ( name | aggregate ) <= [ delay-mechanism ] waveform WHEN condition"
    "{ ELSE waveform WHEN condition } [ ELSE waveform ] ;")
-  (wrapping-in-label))
+  (wrapping-in-label `(:<= ,2nd ,@(if 4th `(,4th)) (:when (,7th ,5th)
+						     ,@(mapcar (lambda (x)
+								 `(,(cadddr x) ,(cadr x)))
+							       8th)
+						     ,@(if 9th `((t ,(cadr 9th))))))))
 
 (define-ebnf-rule conditional-force-assignment
   ("[ label : ] name <= FORCE [ IN | OUT ] expression WHEN condition { ELSE expression WHEN condition }"
@@ -58,7 +62,14 @@
 
 (define-ebnf-rule selected-waveform-assignment
   ("[ label : ] WITH expression SELECT [ ? ] ( name | aggregate ) <= [ delay-mechanism ]"
-   "{ waveform WHEN choices , } waveform WHEN choices ;"))
+   "{ waveform WHEN choices , } waveform WHEN choices ;")
+  (wrapping-in-label `(:<= ,6th ,@(if 8th `(,8th)) (,(if 5th :select? :select)
+						     ,@(mapcar (lambda (x)
+								 `(,(caddr x) ,(car x)))
+							       9th)
+						     ;; NTH has a shift of index by one
+						     (,(nth 11 res) ,10th)))))
+
 
 (define-ebnf-rule selected-force-assignment
   ("[ label : ] WITH expression SELECT [ ? ] name <= FORCE [ IN | OUT ]"
@@ -68,7 +79,14 @@
 (define-ebnf-rule delay-mechanism "TRANSPORT | [ REJECT TIME-expression ] INERTIAL")
 
 (define-ebnf-rule waveform
-  "( VALUE-expression [ AFTER TIME-expression ] | NULL [ AFTER TIME-expression ] ) {, ...} | UNAFFECTED")
+    "( VALUE-expression [ AFTER TIME-expression ] | NULL [ AFTER TIME-expression ] ) {, ...} | UNAFFECTED"
+  `(:waveform ,@(if (eq :unaffected res)
+		    `(,res)
+		    (mapcar (lambda (x)
+			      (if (cadr x)
+				  x
+				  `(,(car x))))
+			    res))))
 
 (define-ebnf-rule variable-assignment-statement
   ("[ label : ] simple-variable-assignment _| [ label : ] conditional-variable-assignment"
