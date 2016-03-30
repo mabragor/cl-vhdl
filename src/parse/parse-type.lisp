@@ -86,8 +86,17 @@
 	  `(,1st (:constraint ,2nd)))))
 
 ;; This _( is interesting -- I wonder, how I would parse it
-(define-ebnf-rule resolution-indication ("RESOLUTION-FUNCTION-name | _(( _resolution-indication"
-					 "| ( _RECORD-ELEMENT-identifier resolution-indication ) {, ...} ))"))
+(define-ebnf-rule resolution-indication "atomic-resolution | compound-resolution")
+
+(define-ebnf-rule atomic-resolution "RESOLUTION-FUNCTION-name")
+
+(define-ebnf-rule compound-resolution "sub-array-resolution | sub-record-resolution")
+
+(define-ebnf-rule sub-array-resolution "(( resolution-indication ))"
+  `(:sub ,2nd))
+
+(define-ebnf-rule sub-record-resolution "(( ( _RECORD-ELEMENT-identifier resolution-indication ) {, ...} ))"
+  `(:fields ,@2nd))
 
 (define-ebnf-rule constraint "range-definition | array-constraint | _record-constraint")
 

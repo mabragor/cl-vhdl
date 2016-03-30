@@ -1089,19 +1089,22 @@
 
 (test resolution-indication
   (with-optima-frob (resolution-indication)
-    (frob nil
+    (frob 'cl-vhdl::asdf
 	  "asdf")
-    (frob nil
+    (frob '(:sub cl-vhdl::resolve-mvl4)
 	  "(resolve_MVL4)")
-    (frob nil
+    (frob '(:sub (:sub cl-vhdl::resolve-mvl4))
 	  "((resolve_MVL4))")
-    (frob nil
+    (frob '(:fields (cl-vhdl::valid cl-vhdl::wired-and))
 	  "(valid wired_and)")
-    (frob nil
+    (frob '(:fields (cl-vhdl::valid cl-vhdl::wired-and)
+	    (cl-vhdl::dirty cl-vhdl::wired-or))
 	  "(valid wired_and, dirty wired_or)")
-    (frob nil
+    (frob '(:fields (cl-vhdl::tag (:sub cl-vhdl::resolve-mvl4)))
 	  "(tag(resolve_mvl4))")
-    (frob nil
+    (frob '(:fields (cl-vhdl::tag (:sub cl-vhdl::resolve-mvl4))
+	    (cl-vhdl::valid cl-vhdl::wired-and)
+	    (cl-vhdl::dirty cl-vhdl::wired-or))
 	  "( tag(resolve_mvl4),
              valid wired_and,
              dirty wired_or )")
@@ -1110,6 +1113,7 @@
 
 (test subtype-declaration-2
   (with-optima-frob (subtype-declaration)
-    (frob nil
+    (frob '(:subtype cl-vhdl::mvl4-logic-vector cl-vhdl::std-ulogic-vector
+	    (:resolution (:sub cl-vhdl::resolve-mvl4)))
 	  "subtype MVL4_logic_vector is (resolve_MVL4) std_ulogic_vector;")
     ))
