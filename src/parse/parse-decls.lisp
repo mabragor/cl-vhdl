@@ -54,7 +54,16 @@
 (define-ebnf-rule function-specification ("[ PURE | IMPURE ] FUNCTION ( identifier | operator-symbol )"
 					  "    [ GENERIC (( GENERIC-interface-list ))"
 					  "      [ GENERIC MAP (( GENERIC-association-list )) ] ]"
-					  "    [ [ PARAMETER ] (( PARAMETER-interface-list )) ] RETURN type-mark"))
+					  "    [ [ PARAMETER ] (( PARAMETER-interface-list )) ] RETURN type-mark")
+  `(,(cond ((eq :pure 1st) :pure-function)
+	   ((eq :impure 1st) :impure-function)
+	   (t :function))
+     ,3rd
+     ,@(if 4th `((:generic ,@(caddr 4th))))
+     ,@(if (and 4th (nth 4 4th))
+	   `((:generic-map ,@(caddr (nth 4 4th)))))
+     (:parameter ,@(if 5th (caddr 5th)))
+     (:return-type ,7th)))
 
 (define-ebnf-rule subprogram-declaration "subprogram-specification ;")
 

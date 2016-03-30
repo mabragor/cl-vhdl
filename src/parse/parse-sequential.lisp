@@ -155,7 +155,7 @@
 			     ,@(if 4th `(,4th)))))
 
 (define-ebnf-rule return-statement "[ label : ] RETURN [ expression ] ;"
-  (wrapping-in-label))
+  (wrapping-in-label `(:return ,@(if 3rd `(,3rd)))))
 
 (define-ebnf-rule null-statement "[ label : ] NULL ;"
   (wrapping-in-label 2nd))

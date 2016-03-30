@@ -890,6 +890,14 @@
            end loop;")
     ))
 
+(test return-statement
+  (with-optima-frob (return-statement)
+    (frob '(:return) "return;")))
+
+(test operator-symbol
+  (with-optima-frob (operator-symbol)
+    (frob "+" "\"+\"")))
+
 (test subprogram-body
   (with-optima-frob (subprogram-body)
     (frob '(:procedure cl-vhdl::average-samples (:parameter)
@@ -909,5 +917,47 @@
                total := total + samples(index);
              end loop;
              average := total / real(samples'length);
-           end procedure average_samples;")))
+           end procedure average_samples;")
+    (frob '(:procedure cl-vhdl::do-arith-op
+	    (:parameter (:sig-var-con cl-vhdl::func-code nil :in cl-vhdl::op))
+	    (:variable integer nil cl-vhdl::result)
+	    (:case cl-vhdl::op
+	      (cl-vhdl::add (:= cl-vhdl::result (:+ cl-vhdl::op1 cl-vhdl::op2)))
+	      (cl-vhdl::subtract (:= cl-vhdl::result (:- cl-vhdl::op1 cl-vhdl::op2))))
+	    (:<= cl-vhdl::dest (:waveform (cl-vhdl::result (:after cl-vhdl::tpd))))
+	    (:<= cl-vhdl::z-flag (:waveform ((:= cl-vhdl::result 0) (:after cl-vhdl::tpd)))))
+	  "procedure do_arith_op ( op : in func_code ) is
+             variable result : integer;
+           begin
+             case op is
+               when add =>
+                 result := op1 + op2;
+               when subtract =>
+                 result := op1 - op2;
+             end case;
+             dest <= result after Tpd;
+             Z_flag <= result = 0 after Tpd;
+           end procedure do_arith_op;")
+    (frob '(:function cl-vhdl::limit (:parameter (:sig-var-con integer nil cl-vhdl::value min max))
+	    (:return-type integer)
+	    (:cond ((:> cl-vhdl::value max) (:return max))
+		   ((:< cl-vhdl::value min) (:return min))
+		   (t (:return cl-vhdl::value))))
+	  "function limit ( value, min, max : integer ) return integer is
+           begin
+             if value > max then
+               return max;
+             elsif value < min then
+               return min;
+             else
+               return value;
+             end if;
+           end function limit;")
+    (frob '(:function "+" (:parameter (:sig-var-con bit-vector nil :in cl-vhdl::left cl-vhdl::right))
+	    (:return-type bit-vector) :|...|)
+	  "function \"+\" ( left, right : in bit_vector ) return bit_vector is
+           begin
+             ...
+           end function \"+\";")
+    ))
 

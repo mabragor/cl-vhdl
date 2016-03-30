@@ -209,8 +209,12 @@
   (if (not (eq :paren (caar (last res))))
       (fail-parse "Not a function call")
       res))
-  
-(define-ebnf-rule operator-symbol "\"{ graphic-character }\"")
+
+(defun not-double-quote (x)
+  (not (char= #\" x)))
+
+(define-vhdl-rule operator-symbol ()
+  (text (progm #\" (times (pred #'not-double-quote graphic-character)) #\")))
 
 
 ;; Apparently, [[ and ]] should denote [ and ] in text
