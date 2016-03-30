@@ -1086,3 +1086,30 @@
 	    cl-vhdl::s1)
 	  "signal s1 : resolve_tri_state_logic tri_state_logic;")
     ))
+
+(test resolution-indication
+  (with-optima-frob (resolution-indication)
+    (frob nil
+	  "asdf")
+    (frob nil
+	  "(resolve_MVL4)")
+    (frob nil
+	  "((resolve_MVL4))")
+    (frob nil
+	  "(valid wired_and)")
+    (frob nil
+	  "(valid wired_and, dirty wired_or)")
+    (frob nil
+	  "(tag(resolve_mvl4))")
+    (frob nil
+	  "( tag(resolve_mvl4),
+             valid wired_and,
+             dirty wired_or )")
+    ))
+	  
+
+(test subtype-declaration-2
+  (with-optima-frob (subtype-declaration)
+    (frob nil
+	  "subtype MVL4_logic_vector is (resolve_MVL4) std_ulogic_vector;")
+    ))
