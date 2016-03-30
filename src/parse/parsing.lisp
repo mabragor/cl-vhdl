@@ -42,7 +42,7 @@
 (define-vhdl-rule maybe-whitespace ()
   (? whitespace) nil)
 
-(define-vhdl-rule identifier ()
+(define-vhdl-rule identifier (&optional hint)
   (let ((it (if (find *vhdl-version* '(87) :test #'equal)
 		(v basic-identifier)
 		(|| basic-identifier

@@ -1079,3 +1079,10 @@
              ...
            end process stim_gen;")
     ))
+
+(test signal-declaration-2
+  (with-optima-frob (signal-declaration)
+    (frob '(:signal (cl-vhdl::tri-state-logic (:resolution cl-vhdl::resolve-tri-state-logic)) nil
+	    cl-vhdl::s1)
+	  "signal s1 : resolve_tri_state_logic tri_state_logic;")
+    ))
