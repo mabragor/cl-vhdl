@@ -1062,5 +1062,20 @@
 
              ...
 
-           end package body bit_vector_signed_arithmetic;")
+           end package body bit_vector_signed_arithmetic;"))
+  (with-optima-frob (process-statement)
+    (frob '(:label cl-vhdl::stim-gen (:process nil
+				      (:package cl-vhdl::id-manager
+				       (:impure-function cl-vhdl::get-id (:parameter)
+							 (:return-type cl-vhdl::natural)))
+				      :|...|))
+	  "stim_gen : process is
+
+             package ID_manager is
+               impure function get_ID return natural;
+             end package ID_manager;
+
+           begin
+             ...
+           end process stim_gen;")
     ))
