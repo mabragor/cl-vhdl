@@ -1119,10 +1119,10 @@
     ))
 
 (test case-study-mac-multiplier
-  (with-optima-frob (asdf)
-    (frob nil
-	  "
+  (with-optima-frob (design-unit)
+    (frob nil "
 library ieee;
+
 use ieee.std_logic_1164.all, ieee.fixed_pkg.all;
 
 entity mac is
@@ -1134,7 +1134,8 @@ entity mac is
          s_real : out u_sfixed(0 downto -15);
          s_imag : out u_sfixed(0 downto -15);
          ovf : out std_ulogic );
-end entity mac;
+end entity mac;")
+    (frob nil "
 
 use ieee.math_complex.all;
 
@@ -1187,10 +1188,12 @@ begin
   s_real <= to_sfixed(s_complex.re, s_real);
   s_imag <= to_sfixed(s_complex.im, s_imag);
 
-end architecture behavioral;
+end architecture behavioral;")
+    (frob nil "
 
 entity mac_test is
-end entity mac_test;
+end entity mac_test;")
+    (frob nil "
 
 library ieee;
 use ieee.std_logic_1164.all, ieee.fixed_pkg.all,
@@ -1232,6 +1235,4 @@ begin
     x <= (+0.1, -0.1); y <= (+0.1, +0.1); reset <= '0';
     wait until not clk;
   end process stimulus;
-end architecture bench_behavioral;
-
-")))
+end architecture bench_behavioral;")))

@@ -11,8 +11,8 @@
 			       "library-unit"))
 
 ;; I should also be able to discern PSL_* rules
-(define-ebnf-rule library-unit ("entity-declaration | architechture-body | package-declaration"
-				"| package-body | package-installation-declaration | configuration-declaration"
+(define-ebnf-rule library-unit ("entity-declaration | architecture-body | package-declaration"
+				"| package-body | package-instantiation-declaration | configuration-declaration"
 				"| context-declaration | PSL-verification-unit"))
 
 ;; CAPS-names denote literal symbols, instead of going down the rules	  
