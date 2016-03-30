@@ -1117,3 +1117,121 @@
 	    (:resolution (:sub cl-vhdl::resolve-mvl4)))
 	  "subtype MVL4_logic_vector is (resolve_MVL4) std_ulogic_vector;")
     ))
+
+(test case-study-mac-multiplier
+  (with-optima-frob (asdf)
+    (frob nil
+	  "
+library ieee;
+use ieee.std_logic_1164.all, ieee.fixed_pkg.all;
+
+entity mac is
+  port ( clk, reset : in std_ulogic;
+         x_real : in u_sfixed(0 downto -15);
+         x_imag : in u_sfixed(0 downto -15);
+         y_real : in u_sfixed(0 downto -15);
+         y_imag : in u_sfixed(0 downto -15);
+         s_real : out u_sfixed(0 downto -15);
+         s_imag : out u_sfixed(0 downto -15);
+         ovf : out std_ulogic );
+end entity mac;
+
+use ieee.math_complex.all;
+
+architecture behavioral of mac is
+  signal x_complex, y_complex, s_complex : complex;
+begin
+  x_complex <= ( to_real(x_real), to_real(x_imag) );
+  y_complex <= ( to_real(y_real), to_real(y_imag) );
+
+  behavior : process (clk) is
+    variable input_x, input_y : complex := (0.0, 0.0);
+    variable real_part_product_1, real_part_product_2,
+             imag_part_product_1, imag_part_product_2 := 0.0;
+    variable product, sum : complex := (0.0, 0.0);
+    variable real_accumulator_ovf,
+             imag_accumulator_ovf : boolean := false;
+  begin
+    if rising_edge(clk) then
+      if reset then
+        sum := (0.0, 0.0);
+        real_accumulator_ovf := false;
+        imag_accumulator_ovf := false;
+      else
+        sum := product + sum;
+        real_accumulator_ovf := real_accumulator_ovf 
+                                or sum.re < -16.0
+                                or sum.re >= +16.0;
+        imag_accumulator_ovf := imag_accumulator_ovf 
+                                or sum.im < -16.0
+                                or sum.im >= +16.0;
+      end if;
+      s_complex <= sum;
+      ovf <= '1' when ( real_accumulator_ovf or imag_accumulator_ovf
+                        or sum.re < -1.0 or sum.re >= +1.0
+                        or sum.im < -1.0 or sum.im >= +1.0 ) else '0';
+
+      product.re := real_part_product_1 - real_part_product_2;
+      product.im := imag_part_product_1 + imag_part_product_2;
+
+      real_part_product_1 := input_x.re * input_y.re;
+      real_part_product_2 := input_x.im * input_y.im;
+      imag_part_product_1 := input_x.re * input_y.im;
+      imag_part_product_2 := input_x.im * input_y.re;
+
+      input_x := x_complex;
+      input_y := y_complex;
+    end if;
+  end process behavior;
+
+  s_real <= to_sfixed(s_complex.re, s_real);
+  s_imag <= to_sfixed(s_complex.im, s_imag);
+
+end architecture behavioral;
+
+entity mac_test is
+end entity mac_test;
+
+library ieee;
+use ieee.std_logic_1164.all, ieee.fixed_pkg.all,
+    ieee.math_complex.all;
+
+architecture bench_behavioral of mac_test is
+
+  signal clk, reset, ovf : std_ulogic := '0';
+  signal x_real, x_imag,
+         y_real, y_imag,
+         s_real, s_imag : u_sfixed(0 downto -15);
+
+  signal x, y, s : complex := (0.0, 0.0);
+
+  constant Tpw_clk : time := 50 ns;
+
+begin
+
+  x_real <= x.re; x_imag <= x.im;
+  y_real <= y.re; y_imag <= y.im;
+
+  dut := entity work.mac(behavioral)
+    port map ( clk, reset, x_real, x_imag, y_real, y_imag, s_real, s_imag, ovf );
+
+  s <= (s_real, s_imag);
+
+  clock_gen : process is
+  begin
+    clk <= '1' after Tpw_clk, '0' after 2 * Tpw_clk;
+    wait for 2 * Tpw_clk;
+  end process clock_gen;
+
+  stimulus : process is
+  begin
+    reset <= '1';
+    wait until not clk;
+    x <= (+0.5, +0.5); y <= (+0.5, +0.5); reset <= '1';
+    wait until not clk;
+    x <= (+0.1, -0.1); y <= (+0.1, +0.1); reset <= '0';
+    wait until not clk;
+  end process stimulus;
+end architecture bench_behavioral;
+
+")))
