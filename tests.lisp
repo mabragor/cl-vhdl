@@ -961,3 +961,106 @@
            end function \"+\";")
     ))
 
+(test package-declaration-2
+  (with-optima-frob (package-declaration)
+    (frob '(:package cl-vhdl::cpu-types
+	    (:constant cl-vhdl::positive 16 cl-vhdl::word-size)
+	    (:constant cl-vhdl::positive 24 cl-vhdl::address-size)
+	    (:subtype cl-vhdl::word (:compound bit-vector (:downto (:- cl-vhdl::word-size 1) 0)))
+	    (:subtype cl-vhdl::address (:compound bit-vector (:downto (:- cl-vhdl::address-size 1) 0)))
+	    (:type cl-vhdl::status-value
+	     (:enum cl-vhdl::halted cl-vhdl::idle cl-vhdl::fetch cl-vhdl::mem-read
+	      cl-vhdl::mem-write cl-vhdl::io-read cl-vhdl::io-write cl-vhdl::int-ack)))
+	  "package cpu_types is
+             constant word_size : positive := 16;
+             constant address_size : positive := 24;
+
+             subtype word is bit_vector(word_size - 1 downto 0);
+             subtype address is bit_vector(address_size - 1 downto 0);
+
+             type status_value is ( halted, idle, fetch, 
+                                    mem_read, mem_write,
+                                    io_read, io_write, int_ack );
+           end package cpu_types;")
+    ))
+
+(test subprogram-declaration
+  (with-optima-frob (package-body-declarative-item)
+    (frob '(:function "+" (:parameter (:sig-var-con cl-vhdl::bit-vector nil cl-vhdl::bv1 cl-vhdl::bv2))
+	    (:return-type cl-vhdl::bit-vector))
+	  "function \"+\" ( bv1, bv2 : bit_vector )
+             return bit_vector;")
+    (frob '(:function "-" (:parameter (:sig-var-con cl-vhdl::bit-vector nil cl-vhdl::bv))
+	    (:return-type cl-vhdl::bit-vector))
+	  "function \"-\" ( bv : bit_vector )
+             return bit_vector;")
+    (frob '(:function cl-vhdl::mult-unsigned (:parameter (:sig-var-con bit-vector nil cl-vhdl::bv1 cl-vhdl::bv2))
+	    (:return-type bit-vector) :|...| :|...|)
+	  "function mult_unsigned ( bv1 , bv2 : bit_vector )
+             return bit_vector is ...
+           begin
+             ...
+           end function mult_unsigned;")
+    ))
+
+	  
+(test package-body
+  (with-optima-frob (package-body)
+    (frob '(:package-body cl-vhdl::bit-vector-signed-arithmetic
+	    (:function "+" (:parameter (:sig-var-con bit-vector nil cl-vhdl::bv1 cl-vhdl::bv2))
+	     (:return-type bit-vector))
+	    (:function "-" (:parameter (:sig-var-con bit-vector nil cl-vhdl::bv))
+	     (:return-type bit-vector))
+	    (:function cl-vhdl::mult-unsigned (:parameter (:sig-var-con bit-vector nil cl-vhdl::bv1 cl-vhdl::bv2))
+	     (:return-type bit-vector) :|...| :|...|)
+	    (:function "*" (:parameter (:sig-var-con bit-vector nil cl-vhdl::bv1 cl-vhdl::bv2))
+	     (:return-type bit-vector)
+	     (:cond ((:and (:not (:compound cl-vhdl::bv1 (:paren (:compound cl-vhdl::bv1
+									    (:attribute cl-vhdl::left)))))
+			   (:not (:compound cl-vhdl::bv2 (:paren (:compound cl-vhdl::bv2
+									    (:attribute cl-vhdl::left))))))
+		     (:return (:compound cl-vhdl::mult-unsigned (:paren cl-vhdl::bv1 cl-vhdl::bv2))))
+		    ((:and (:not (:compound cl-vhdl::bv1 (:paren (:compound cl-vhdl::bv1
+									    (:attribute cl-vhdl::left)))))
+			   (:compound cl-vhdl::bv2 (:paren (:compound cl-vhdl::bv2 (:attribute cl-vhdl::left)))))
+		     (:return (:- (:compound cl-vhdl::mult-unsigned (:paren cl-vhdl::bv1 (:- cl-vhdl::bv2))))))
+		    ((:and (:compound cl-vhdl::bv1 (:paren (:compound cl-vhdl::bv1 (:attribute cl-vhdl::left))))
+			   (:not (:compound cl-vhdl::bv2 (:paren (:compound cl-vhdl::bv2
+									    (:attribute cl-vhdl::left))))))
+		     (:return (:- (:- cl-vhdl::mult) (:compound cl-vhdl::unsigned
+								(:paren (:- cl-vhdl::bv1) cl-vhdl::bv2)))))
+		    (t (:return (:compound cl-vhdl::mult-unsigned (:paren (:- cl-vhdl::bv1) (:- cl-vhdl::bv2)))))))
+	    :|...|)
+	  "package body bit_vector_signed_arithmetic is
+
+             function \"+\" ( bv1, bv2 : bit_vector )
+               return bit_vector;
+
+             function \"-\" ( bv : bit_vector )
+               return bit_vector;
+
+             function mult_unsigned ( bv1 , bv2 : bit_vector )
+               return bit_vector is
+               ...
+             begin
+               ...
+             end function mult_unsigned;
+
+             function \"*\" ( bv1, bv2 : bit_vector )
+               return bit_vector is
+             begin
+               if not bv1(bv1'left) and not bv2(bv2'left) then
+                 return mult_unsigned(bv1, bv2);
+               elsif not bv1(bv1'left) and bv2(bv2'left) then
+                 return -mult_unsigned(bv1, -bv2);
+               elsif bv1(bv1'left) and not bv2(bv2'left) then
+                 return -mult-unsigned(-bv1, bv2);
+               else
+                 return mult_unsigned(-bv1, -bv2);
+               end if;
+             end function \"*\";
+
+             ...
+
+           end package body bit_vector_signed_arithmetic;")
+    ))

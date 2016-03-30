@@ -6,7 +6,7 @@
 (define-ebnf-rule concurrent-statement
   ("block-statement | process-statement | concurrent-procedure-call-statement | concurrent-assertion-statement"
    "| concurrent-signal-assignment-statement | component-instantiation-statement | generate-statement"
-   "| PSL-psl-directive"))
+   "| PSL-psl-directive | triple-dot-statement"))
 
 (define-ebnf-rule block-statement ("BLOCK-label : BLOCK [ (( GUARD-expression )) ] [ IS ]"
 				   "    [ GENERIC (( GENERIC-interface-list )) ;"

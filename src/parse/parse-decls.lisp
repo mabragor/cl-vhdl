@@ -25,17 +25,19 @@
 
 (define-ebnf-rule package-body ("PACKAGE BODY identifier IS"
 				"    { package-body-declarative-item }"
-				"END [ PACKAGE BODY ] [ identifier ] ;"))
+				"END [ PACKAGE BODY ] [ identifier ] ;")
+  `(:package-body ,3rd ,@5th))
 
 (define-ebnf-rule package-body-declarative-item ("subprogram-declaration | subprogram-body"
-						 "| _subprogram-intantiation-declaration"
+						 "| _subprogram-instantiation-declaration"
 						 "| _package-declaration | _package-body"
 						 "| _package-instantiation-declaration"
 						 "| type-declaration | subtype-declaration"
 						 "| constant-declaration | variable-declaration"
 						 "| file-declaration | alias-declaration"
 						 "| _attribute-declaration | _attribute-specification"
-						 "| use-clause | group-template-declaration | group-declaration"))
+						 "| use-clause | group-template-declaration | group-declaration"
+						 "| triple-dot-statement" ))
 
 (define-ebnf-rule package-instantiation-declaration ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
 						      "    [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
@@ -65,7 +67,8 @@
      (:parameter ,@(if 5th (caddr 5th)))
      (:return-type ,7th)))
 
-(define-ebnf-rule subprogram-declaration "subprogram-specification ;")
+(define-ebnf-rule subprogram-declaration "subprogram-specification ;"
+  1st)
 
 (define-ebnf-rule subprogram-body ("subprogram-specification IS"
 				   "    { subprogram-declarative-item }"
@@ -81,7 +84,8 @@
 					       "| constant-declaration | variable-declaration"
 					       "| file-declaration | alias-declaration"
 					       "| attribute-declaration | attribute-specification"
-					       "| use-clause | group-template-declaration | group-declaration"))
+					       "| use-clause | group-template-declaration | group-declaration"
+					       "| triple-dot-statement"))
 
 (define-ebnf-rule subprogram-instantiation-declaration ("( PROCEDURE | FUNCTION ) identifier IS"
 							 "    NEW UNINSTANTIATED-SUBPROGRAM-name [ signature ]"
