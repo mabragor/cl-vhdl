@@ -43,3 +43,9 @@
 ;; TODO : various restrictions on possible attribute names
 
 ;; TODO : separate := and ::=
+
+;; (define-vhdl-rule physical-literal (&optional hint)
+;;   (let ((res (list (? (most-full-parse (v decimal-literal)
+;; 				       (v based-literal)))
+;; 		   (v name :unit))))
+;;     res))

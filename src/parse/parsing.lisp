@@ -3,11 +3,19 @@
 
 (cl-interpol:enable-interpol-syntax)
 
+(register-vhdl-context toplevel t nil)
+
 (defparameter *vhdl-version* nil)
 
 (defparameter *vhdl-strict* t
   "When this parameter is NIL, some restrictions on possible VHDL syntax are relaxed,
    so as to make it more lispy")
+
+(defmacro fail-if-reserved (&optional (thing 'res))
+  `(let ((it ,thing))
+     (if (reserved-word-p it)
+	 (fail-parse "Can't be a reserved word")
+	 it)))
 
 (define-vhdl-rule one-line-comment ()
   (v "--") `(:comment ,(text (times (!! (|| #\newline #\return))))))
@@ -35,10 +43,13 @@
   (? whitespace) nil)
 
 (define-vhdl-rule identifier ()
-  (if (find *vhdl-version* '(87) :test #'equal)
-      (v basic-identifier)
-      (|| basic-identifier
-	  extended-identifier)))
+  (let ((it (if (find *vhdl-version* '(87) :test #'equal)
+		(v basic-identifier)
+		(|| basic-identifier
+		    extended-identifier))))
+    (if (eq toplevel :t)
+	(fail-if-reserved it)
+	it)))
 
 (define-vhdl-rule basic-identifier-string ()
   (text (postimes (|| (character-ranges (#\A #\Z) (#\a #\z) (#\0 #\9))
@@ -86,9 +97,9 @@
 
 (define-vhdl-rule basic-identifier ()
   (let ((it (v unguarded-basic-identifier)))
-    (if (reserved-word-p it)
-	(fail-parse "Identifier can't be reserved word")
-	it)))
+    ;; (if (reserved-word-p it)
+    ;; 	(fail-parse "Identifier can't be reserved word")
+    it))
 
 (define-vhdl-rule extended-identifier ()
   (let ((str (v extended-identifier-string)))
@@ -381,30 +392,38 @@
 	 ,then
 	 ,else)))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun %define-ebnf-rule (name syntax body &key context-sensitive)
+    (multiple-value-bind (liquid-body greedy-char-seqs)
+	(esrap-liquid-body syntax)
+      `(progn ,@(mapcar (lambda (x)
+			  `(update-greedy-char-seq-table ,x))
+			greedy-char-seqs)
+	      (macrolet ((wh? (&body x) `(progn (v maybe-whitespace) ,.x))
+			 (new (x &optional (y nil y-p))
+			   (if y-p
+			       `(if (or (not *vhdl-version*)
+					(<= ,x *vhdl-version*))
+				    ,y
+				    (fail-parse "Version we are trying to parse doesn't support this"))
+			       `(if (or (not *vhdl-version*)
+					(<= 2008 *vhdl-version*)) ; current version as these lines are written
+				    ,x))))
+		(,(if context-sensitive
+		      'define-c-vhdl-rule
+		      'define-vhdl-rule) ,name (&optional hint)
+		  (let ((res ,liquid-body))
+		    (with-list-places (res)
+		      ,@(or body `(res))))))))))
+
+
 ;; We will change this to something meaningful later
 (defmacro define-ebnf-rule (name syntax &body body)
-  `(%define-ebnf-rule ,name ,(s-exp<-ebnf syntax) ,@body))
+  (%define-ebnf-rule name (s-exp<-ebnf syntax) body))
 
-(defmacro %define-ebnf-rule (name syntax &body body)
-  (multiple-value-bind (liquid-body greedy-char-seqs)
-      (esrap-liquid-body syntax)
-    `(progn ,@(mapcar (lambda (x)
-			`(update-greedy-char-seq-table ,x))
-		      greedy-char-seqs)
-	    (macrolet ((wh? (&body x) `(progn (v maybe-whitespace) ,.x))
-		       (new (x &optional (y nil y-p))
-			 (if y-p
-			     `(if (or (not *vhdl-version*)
-				      (<= ,x *vhdl-version*))
-				  ,y
-				  (fail-parse "Version we are trying to parse doesn't support this"))
-			     `(if (or (not *vhdl-version*)
-				      (<= 2008 *vhdl-version*)) ; current version as these lines are written
-				  ,x))))
-	      (define-vhdl-rule ,name (&optional hint)
-		(let ((res ,liquid-body))
-		  (with-list-places (res)
-		    ,@(or body `(res)))))))))
+(defmacro define-c-ebnf-rule (name syntax &body body)
+  (%define-ebnf-rule name (s-exp<-ebnf syntax) body :context-sensitive t))
+
     
 
 ;; OK, now that I have all the syntactic rules explicitly written down,
@@ -536,4 +555,5 @@
        (if 1st
 	   `(:label ,(car 1st) ,,g!-it)
 	   ,g!-it))))
+
 

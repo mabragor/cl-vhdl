@@ -242,6 +242,8 @@
 
 (test type-definition
   (with-optima-frob (type-definition)
+    (frob '(:integer 0 100)
+	  "range 0 to 100")
     (frob (list :physical (list _ _) 'cl-vhdl::ohm)
 	  "range 0 to 1E9
                    units
@@ -516,12 +518,12 @@
 	  "array (0 to 31) of bit")
     (frob '(:array cl-vhdl::natural (:to cl-vhdl::idle cl-vhdl::error))
 	  "array (idle to error) of natural")
-    (frob '(:array cl-vhdl::natural (:subtype (cl-vhdl::controller-state (:constraint (:range cl-vhdl::idle
-											      cl-vhdl::error)))))
+    (frob '(:array cl-vhdl::natural (cl-vhdl::controller-state (:constraint (:range cl-vhdl::idle
+										    cl-vhdl::error))))
 	  "array (controller_state range idle to error) of natural")
-    (frob '(:array cl-vhdl::real (:subtype cl-vhdl::coeff-ram-address))
+    (frob '(:array cl-vhdl::real cl-vhdl::coeff-ram-address)
 	  "array (coeff_ram_address) of real")
-    (frob '(:array cl-vhdl::state (:subtype cl-vhdl::state) (:subtype cl-vhdl::symboL))
+    (frob '(:array cl-vhdl::state cl-vhdl::state cl-vhdl::symbol)
 	  "array (state, symbol) of state")
     ))
 
@@ -550,10 +552,9 @@
 	  "(0 => 1.6, 1 => 2.3, 2 => 1.6, others => 0.0)")
     (frob '(:aggregate (:=> (:|| 0 2) 1.6) (:=> 1 2.3) (:=> :others 0.0))
 	  "(0 | 2 => 1.6, 1 => 2.3, others => 0.0)")
-    (frob (list :aggregate
-		(list :=> 0 (list :aggregate (list :=> _ 1) (list :=> :others 6)))
-		(list :=> 1 (list :aggregate (list :=> _ 2) (list :=> :others 6)))
-		(list :=> 2 (list :aggregate (list :=> _ 3) (list :=> _ 5) (list :=> :others 6))))
+    (frob '(:aggregate (:=> 0 (:aggregate (:=> #\a 1) (:=> :others 6)))
+	    (:=> 1 (:aggregate (:=> #\t 2) (:=> :others 6)))
+	    (:=> 2 (:aggregate (:=> #\d 3) (:=> #\h 5) (:=> :others 6))))
 	  "( 0 => ('a' => 1, others => 6),
              1 => ('t' => 2, others => 6),
              2 => ('d' => 3, 'h' => 5, others => 6) )"))
@@ -861,3 +862,52 @@
   (with-optima-frob (context-reference)
     (frob '(:context (:compound cl-vhdl::widget-lib (:dot cl-vhdl::widget-context)))
 	  "context widget_lib.widget_context;")))
+
+(test procedure-specification
+  (with-optima-frob (procedure-specification)
+    (frob '(:procedure cl-vhdl::average-samples (:parameter))
+	  "procedure average_samples")))
+	  
+(test subprogram-declarative-item
+  (with-optima-frob (subprogram-declarative-item)
+    (frob '(:variable cl-vhdl::real 0.0 cl-vhdl::total)
+	  "variable total : real := 0.0;")))
+
+(test sequential-statement-2
+  (with-optima-frob (sequential-statement)
+    (frob '(:assert (:> (:compound cl-vhdl::samples (:attribute cl-vhdl::length)) 0) (:severity cl-vhdl::failure))
+	  "assert samples'length > 0 severity failure;")
+    (frob '(::= cl-vhdl::average
+	    (:/ cl-vhdl::total
+	     (:compound real (:paren (:compound cl-vhdl::samples (:attribute length))))))
+	  "average := total / real(samples'length);"))
+  (with-optima-frob (loop-statement)
+    (frob '(:loop (:for cl-vhdl::index :in (:compound cl-vhdl::samples (:attribute cl-vhdl::range)))
+	    (:= cl-vhdl::total
+	     (:+ cl-vhdl::total (:compound cl-vhdl::samples (:paren cl-vhdl::index)))))
+	  "for index in samples'range loop
+               total := total + samples(index);
+           end loop;")
+    ))
+
+(test subprogram-body
+  (with-optima-frob (subprogram-body)
+    (frob '(:procedure cl-vhdl::average-samples (:parameter)
+	    (:variable real 0.0 cl-vhdl::total)
+	    (:assert (:> (:compound cl-vhdl::samples (:attribute length)) 0)
+	     (:severity cl-vhdl::failure))
+	    (:loop (:for cl-vhdl::index :in (:compound cl-vhdl::samples (:attribute cl-vhdl::range)))
+	     (:= cl-vhdl::total (:+ cl-vhdl::total (:compound cl-vhdl::samples (:paren cl-vhdl::index)))))
+	    (:= cl-vhdl::average
+	     (:/ cl-vhdl::total
+	      (:compound real (:paren (:compound cl-vhdl::samples (:attribute length)))))))
+	  "procedure average_samples is
+             variable total : real := 0.0;
+           begin
+             assert samples'length > 0 severity failure;
+             for index in samples'range loop
+               total := total + samples(index);
+             end loop;
+             average := total / real(samples'length);
+           end procedure average_samples;")))
+

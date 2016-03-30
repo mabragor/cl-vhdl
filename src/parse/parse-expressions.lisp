@@ -1,6 +1,7 @@
 
 (in-package #:cl-vhdl)
 
+
 (defun populate-precedence (lst)
   (let ((res (make-hash-table :test #'eq)))
     (iter (for elt in lst)
@@ -150,13 +151,18 @@
 
 (define-ebnf-rule name "compound-name | atomic-name | _external-name")
 
-(define-ebnf-rule atomic-name "identifier | operator-symbol | character-literal"
-  (when (reserved-word-p res)
-    (fail-parse "Name can't be a reserved word"))
-  res)
+(define-c-ebnf-rule atomic-name "identifier | operator-symbol | character-literal"
+  (if (eq toplevel :t)
+      (fail-if-reserved)
+      res))
 
-(define-ebnf-rule compound-name ("atomic-name name-tail { ... }")
-  `(:compound ,1st ,@2nd))
+(define-ebnf-rule name-tails "name-tail { ... }")
+
+(define-vhdl-rule compound-name (&optional hint)
+  (let* ((atomic (v atomic-name))
+	 (toplevel :nil))
+    (let ((tails (v name-tails)))
+      `(:compound ,atomic ,@tails))))
 
 (define-ebnf-rule name-tail ("parenthesized-compound-tail"
 			     "| discrete-range-tail"
@@ -164,18 +170,31 @@
 			     "| attribute-tail"
 			     "| funcall-tail"))
 
-(define-ebnf-rule parenthesized-compound-tail "(( expression {, ...} ))"
-  `(:paren ,@2nd))
+(define-ebnf-rule expressions "expression {, ...}")
 
-(define-ebnf-rule discrete-range-tail "(( discrete-range ))"
-  2nd)
+(define-vhdl-rule parenthesized-compound-tail (&optional hint)
+  ;; With respect to expression parsing we are again at "toplevel"
+  (let ((toplevel :t))
+    `(:paren ,@(progm #\( expressions #\)))))
+
+
+(define-vhdl-rule discrete-range-tail (&optional hint)
+  (let ((toplevel :t))
+    (progm #\( discrete-range #\))))
 
 (define-ebnf-rule selected-tail ". ( atomic-name | ALL )"
   `(:dot ,2nd))
-(define-ebnf-rule attribute-tail "[ signature ] ' identifier [ (( expression )) ]"
-  `(:attribute ,3rd ,@(if 1st `((:signature ,1st))) ,@(if 4th `(,(cadr 4th)))))
-(define-ebnf-rule funcall-tail "(( PARAMETER-association-list ))"
-  `(:paren ,@2nd))
+(define-vhdl-rule attribute-tail (&optional hint) ;; "[ signature ] ' identifier [ (( expression )) ]"
+  (cap sig (? signature)) (v #\') (cap id identifier) (cap expr (? (let ((toplevel :t))
+								     (progm #\( expression #\)))))
+  `(:attribute ,(recap id)
+	       ,@(if (recap? sig)
+		     `((:signature ,(recap? sig))))
+	       ,@(if (recap? expr) `(,(recap? expr)))))
+
+(define-vhdl-rule funcall-tail (&optional hint)
+  (let ((toplevel :t))
+    `(:paren ,@(progm #\( (v association-list :parameter) #\)))))
 
 (define-ebnf-rule selected-name "compound-name"
   (if (not (eq :dot (caar (last res))))
@@ -232,6 +251,8 @@
       1st
       `(:|| ,. res)))
 
-(define-ebnf-rule label "identifier")
+(define-ebnf-rule label "identifier"
+  (fail-if-reserved))
+    
 
 (define-ebnf-rule tool-directive "` identifier { graphic-character }")

@@ -98,11 +98,11 @@
 
 (define-ebnf-rule discrete-range "simple-discrete-range | subtype-range | attribute-range")
 
-(define-ebnf-rule subtype-range "DISCRETE-subtype-indication"
-  `(:subtype ,res))
+;; We can't really tell subtype from attribute-range at this stage -- so just
+;; return it "vanilla"
+(define-ebnf-rule subtype-range "DISCRETE-subtype-indication")
 
-(define-ebnf-rule attribute-range "RANGE-attribute-name"
-  `(:attribute ,res))
+(define-ebnf-rule attribute-range "RANGE-attribute-name")
 
 (define-ebnf-rule simple-discrete-range "simple-expression ( TO | DOWNTO ) simple-expression"
   `(,2nd ,1st ,3rd))

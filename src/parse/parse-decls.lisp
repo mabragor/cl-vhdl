@@ -45,7 +45,11 @@
 (define-ebnf-rule procedure-specification ("PROCEDURE identifier"
 					   "    [ GENERIC (( GENERIC-interface-list ))"
 					   "      [ GENERIC MAP (( GENERIC-association-list )) ] ]"
-					   "    [ [ PARAMETER ] (( PARAMETER-interface-list )) ]"))
+					   "    [ [ PARAMETER ] (( PARAMETER-interface-list )) ]")
+  `(:procedure ,2nd ,@(if 3rd `((:generic ,@(caddr 3rd))))
+	       ,@(if (and 3rd (nth 4 3rd))
+		     `((:generic-map ,@(caddr (nth 4 3rd)))))
+	       (:parameter ,@(if 4th (caddr 4th)))))
 
 (define-ebnf-rule function-specification ("[ PURE | IMPURE ] FUNCTION ( identifier | operator-symbol )"
 					  "    [ GENERIC (( GENERIC-interface-list ))"
@@ -57,7 +61,8 @@
 (define-ebnf-rule subprogram-body ("subprogram-specification IS"
 				   "    { subprogram-declarative-item }"
 				   "BEGIN { sequential-statement }"
-				   "END [ PROCEDURE | FUNCTION ] [ identifier | operator-symbol ] ;"))
+				   "END [ PROCEDURE | FUNCTION ] [ identifier | operator-symbol ] ;")
+  `(,@1st ,@3rd ,@5th))
 
 (define-ebnf-rule subprogram-declarative-item ("subprogram-declaration | subprogram-body"
 					       "| _subprogram-instantiation-declaration"
