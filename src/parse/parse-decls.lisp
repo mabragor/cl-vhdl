@@ -122,7 +122,10 @@
 				    "    [ [ OPEN FILE-OPEN-KIND-expression ] IS STRING-expression ] ;"))
 
 (define-ebnf-rule alias-declaration ("ALIAS ( identifier | character-literal | operator-symbol )"
-				     "    [ : subtype-indication ] IS name [ signature ] ;"))
+				     "    [ : subtype-indication ] IS name [ signature ] ;")
+  `(:alias ,2nd ,5th
+	   ,@(if 3rd `((:subtype ,(cadr 3rd))))
+	   ,@(if 6th `((:signature ,@6th)))))
 
 (define-ebnf-rule component-declaration ("COMPONENT identifier [ IS ]"
 					 "    [ GENERIC (( GENERIC-interface-list )) ; ]"

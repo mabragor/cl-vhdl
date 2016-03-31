@@ -1293,3 +1293,22 @@ begin
   end process behavior;
   s_imag <= to_sfixed(s_complex.im, s_imag);
 end architecture behavioral;")))
+
+
+(test alias-declaration
+  (with-optima-frob (alias-declaration)
+    (frob '(:alias cl-vhdl::alu-data-width (:compound cl-vhdl::work (:dot cl-vhdl::alu-types)
+					    (:dot cl-vhdl::data-width)))
+	  "alias alu_data_width is work.alu_types.data_width;")
+    (frob '(:alias cl-vhdl::interrupt-level (:compound cl-vhdl::psw (:downto 30 26)))
+	  "alias interrupt_level is PSW(30 downto 26);")
+    (frob '(:alias cl-vhdl::interrupt-level (:compound cl-vhdl::psw (:downto 30 26))
+	    (:subtype (:compound cl-vhdl::bit-vector (:downto 4 0))))
+	  "alias interrupt_level : bit_vector(4 downto 0) is PSW(30 downto 26);")
+    (frob '(:alias cl-vhdl::bv-increment (:compound cl-vhdl::work (:dot cl-vhdl::arithmetic-ops)
+					  (:dot cl-vhdl::increment))
+	    (:signature bit-vector integer))
+	  "alias bv_increment is work.arithmetic_ops.increment [ bit_vector, integer ];")
+    (frob '(:alias "*" "and" (:signature bit bit (:return bit)))
+	  "alias \"*\" is \"and\" [ bit, bit return bit ];")
+    ))
