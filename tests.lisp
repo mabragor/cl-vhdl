@@ -1440,7 +1440,12 @@ end architecture behavioral;")))
 				      (:paren cl-vhdl::basic)))))
 	  "for bit0, bit1 : flipflop
              use entity work.edge_triggered_Dff(basic);
-           end for;")))
+           end for;")
+    (frob '(:for (cl-vhdl::serial-interface :all) (:use :open))
+	  "for all : serial_interface
+             use open;
+           end for;")
+    ))
 
 (test configuration-declaration
   (with-optima-frob (configuration-declaration)
