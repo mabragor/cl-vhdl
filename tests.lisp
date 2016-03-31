@@ -1408,3 +1408,27 @@ end architecture behavioral;")))
 	  "procedure combine_vec_with_bit is new combine[T, bit]
              generic map ( T => bit_vector );")
     ))
+
+(test component-declaration
+  (with-optima-frob (component-declaration)
+    (frob '(:component cl-vhdl::flipflop
+	    (:generic (:sig-var-con cl-vhdl::delay-length nil cl-vhdl::tprop cl-vhdl::tsetup cl-vhdl::thold))
+	    (:port (:sig-var-con bit nil :in cl-vhdl::clk)
+	     (:sig-var-con bit nil :in cl-vhdl::clr) (:sig-var-con bit nil :in cl-vhdl::d)
+	     (:sig-var-con bit nil :out cl-vhdl::q)))
+	  "component flipflop is
+             generic ( Tprop, Tsetup, Thold : delay_length );
+             port ( clk : in bit; clr : in bit; d : in bit;
+                    q : out bit );
+           end component flipflop;"))
+  (with-optima-frob (component-instantiation-statement)
+    (frob '(:instance cl-vhdl::bit0 (:component cl-vhdl::flipflop)
+	    (:generic-map (:=> cl-vhdl::tprop (cl-vhdl::ns 2))
+	     (:=> cl-vhdl::tsetup (cl-vhdl::ns 2)) (:=> cl-vhdl::thold (cl-vhdl::ns 1)))
+	    (:port-map (:=> cl-vhdl::clk cl-vhdl::clk) (:=> cl-vhdl::clr cl-vhdl::clr)
+	     (:=> cl-vhdl::d (:compound cl-vhdl::d (:paren 0)))
+	     (:=> cl-vhdl::q (:compound cl-vhdl::q (:paren 0)))))
+	  "bit0 : component flipflop
+               generic map ( Tprop => 2 ns, Tsetup => 2 ns, Thold => 1 ns )
+               port map ( clk => clk, clr => clr, d => d(0), q => q(0) );")
+    ))

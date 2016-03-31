@@ -135,7 +135,9 @@
 (define-ebnf-rule component-declaration ("COMPONENT identifier [ IS ]"
 					 "    [ GENERIC (( GENERIC-interface-list )) ; ]"
 					 "    [ PORT (( PORT-interface-list )) ; ]"
-					 "END COMPONENT [ identifier ] ;"))
+					 "END COMPONENT [ identifier ] ;")
+  `(:component ,2nd ,@(if 4th `((:generic ,@(caddr 4th))))
+	       ,@(if 5th `((:port ,@(caddr 5th))))))
 
 (define-ebnf-rule attribute-declaration "ATTRIBUTE identifier | type-mark ;")
 
