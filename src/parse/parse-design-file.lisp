@@ -8,7 +8,8 @@
 ;; List of multiple strings is concatenated -- to make linebreaking more convenient
 ;; Things introduced in VHDL-2008 begin with underline
 (define-ebnf-rule design-unit ("{ library-clause | use-clause | _context-reference }"
-			       "library-unit"))
+			       "library-unit")
+  `(:design-unit ,@1st ,2nd))
 
 ;; I should also be able to discern PSL_* rules
 (define-ebnf-rule library-unit ("entity-declaration | architecture-body | package-declaration"

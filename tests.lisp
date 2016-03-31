@@ -1120,7 +1120,25 @@
 
 (test case-study-mac-multiplier
   (with-optima-frob (design-unit)
-    (frob nil "
+    (frob '(:design-unit (:library cl-vhdl::ieee)
+	    (:use (:compound cl-vhdl::ieee (:dot cl-vhdl::std-logic-1164) (:dot :all))
+	     (:compound cl-vhdl::ieee (:dot cl-vhdl::fixed-pkg) (:dot :all)))
+	    (:entity cl-vhdl::mac
+	     (:port (:sig-var-con cl-vhdl::std-ulogic nil :in cl-vhdl::clk cl-vhdl::reset)
+	      (:sig-var-con (:compound cl-vhdl::u-sfixed (:downto 0 (:- 15))) nil :in
+			    cl-vhdl::x-real)
+	      (:sig-var-con (:compound cl-vhdl::u-sfixed (:downto 0 (:- 15))) nil :in
+			    cl-vhdl::x-imag)
+	      (:sig-var-con (:compound cl-vhdl::u-sfixed (:downto 0 (:- 15))) nil :in
+			    cl-vhdl::y-real)
+	      (:sig-var-con (:compound cl-vhdl::u-sfixed (:downto 0 (:- 15))) nil :in
+			    cl-vhdl::y-imag)
+	      (:sig-var-con (:compound cl-vhdl::u-sfixed (:downto 0 (:- 15))) nil :out
+			    cl-vhdl::s-real)
+	      (:sig-var-con (:compound cl-vhdl::u-sfixed (:downto 0 (:- 15))) nil :out
+			    cl-vhdl::s-imag)
+	      (:sig-var-con cl-vhdl::std-ulogic nil :out cl-vhdl::ovf))))
+ "
 library ieee;
 
 use ieee.std_logic_1164.all, ieee.fixed_pkg.all;
@@ -1134,21 +1152,76 @@ entity mac is
          s_real : out u_sfixed(0 downto -15);
          s_imag : out u_sfixed(0 downto -15);
          ovf : out std_ulogic );
-end entity mac;")
-    (frob nil "
-
-use ieee.math_complex.all;
-
-architecture behavioral of mac is
-  signal x_complex, y_complex, s_complex : complex;
-begin
-  x_complex <= ( to_real(x_real), to_real(x_imag) );
-  y_complex <= ( to_real(y_real), to_real(y_imag) );
-
-  behavior : process (clk) is
+end entity mac;"))
+  (with-optima-frob (use-clause)
+    (frob '(:use (:compound cl-vhdl::ieee (:dot cl-vhdl::math-complex) (:dot :all)))
+	  "use ieee.math_complex.all;"))
+  (with-optima-frob (block-declarative-item)
+    (frob '(:signal cl-vhdl::complex nil cl-vhdl::x-complex cl-vhdl::y-complex cl-vhdl::s-complex)
+	  "signal x_complex, y_complex, s_complex : complex;"))
+  (with-optima-frob (concurrent-statement)
+    (frob '(:<= cl-vhdl::x-complex (:waveform ((:aggregate (:compound cl-vhdl::to-real (:paren cl-vhdl::x-real))
+							   (:compound cl-vhdl::to-real (:paren cl-vhdl::x-imag))))))
+	  "x_complex <= ( to_real(x_real), to_real(x_imag) );")
+    (frob '(:<= cl-vhdl::y-complex (:waveform ((:aggregate (:compound cl-vhdl::to-real (:paren cl-vhdl::y-real))
+							   (:compound cl-vhdl::to-real (:paren cl-vhdl::y-imag))))))
+	  "y_complex <= ( to_real(y_real), to_real(y_imag) );")
+    (frob '(:label cl-vhdl::behavior
+	    (:process (cl-vhdl::clk)
+	     (:variable complex (:aggregate 0.0 0.0) cl-vhdl::input-x cl-vhdl::input-y)
+	     (:variable real 0.0 cl-vhdl::real-part-product-1 cl-vhdl::real-part-product-2
+	      cl-vhdl::imag-part-product-1 cl-vhdl::imag-part-product-2)
+	     (:variable complex (:aggregate 0.0 0.0) cl-vhdl::product sum)
+	     (:variable boolean cl-vhdl::false cl-vhdl::real-accumulator-ovf
+	      cl-vhdl::imag-accumulator-ovf)
+	     (:cond
+	       ((:compound cl-vhdl::rising-edge (:paren cl-vhdl::clk))
+		(:cond
+		  (cl-vhdl::reset (:= sum (:aggregate 0.0 0.0))
+				  (:= cl-vhdl::real-accumulator-ovf cl-vhdl::false)
+				  (:= cl-vhdl::imag-accumulator-ovf cl-vhdl::false))
+		  (t (:= sum (:+ cl-vhdl::product sum))
+		     (:= cl-vhdl::real-accumulator-ovf
+			 (:or cl-vhdl::real-accumulator-ovf
+			      (:< (:compound sum (:dot cl-vhdl::re)) (:- 16.0))
+			      (:>= (:compound sum (:dot cl-vhdl::re)) (:+ 16.0))))
+		     (:= cl-vhdl::imag-accumulator-ovf
+			 (:or cl-vhdl::imag-accumulator-ovf
+			      (:< (:compound sum (:dot cl-vhdl::im)) (:- 16.0))
+			      (:>= (:compound sum (:dot cl-vhdl::im)) (:+ 16.0))))))
+		(:<= cl-vhdl::s-complex (:waveform (sum)))
+		(:<= cl-vhdl::ovf
+		     (:when
+			 ((:or cl-vhdl::real-accumulator-ovf cl-vhdl::imag-accumulator-ovf
+			       (:< (:compound sum (:dot cl-vhdl::re)) (:- 1.0))
+			       (:>= (:compound sum (:dot cl-vhdl::re)) (:+ 1.0))
+			       (:< (:compound sum (:dot cl-vhdl::im)) (:- 1.0))
+			       (:>= (:compound sum (:dot cl-vhdl::im)) (:+ 1.0)))
+			  (:waveform (#\1)))
+		       (t (:waveform (#\0)))))
+		(:= (:compound cl-vhdl::product (:dot cl-vhdl::re))
+		    (:- cl-vhdl::real-part-product-1 cl-vhdl::real-part-product-2))
+		(:= (:compound cl-vhdl::product (:dot cl-vhdl::im))
+		    (:+ cl-vhdl::imag-part-product-1 cl-vhdl::imag-part-product-2))
+		(:= cl-vhdl::real-part-product-1
+		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::re))
+			(:compound cl-vhdl::input-y (:dot cl-vhdl::re))))
+		(:= cl-vhdl::real-part-product-2
+		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::im))
+			(:compound cl-vhdl::input-y (:dot cl-vhdl::im))))
+		(:= cl-vhdl::imag-part-product-1
+		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::re))
+			(:compound cl-vhdl::input-y (:dot cl-vhdl::im))))
+		(:= cl-vhdl::imag-part-product-2
+		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::im))
+			(:compound cl-vhdl::input-y (:dot cl-vhdl::re))))
+		(:= cl-vhdl::input-x cl-vhdl::x-complex)
+		(:= cl-vhdl::input-y cl-vhdl::y-complex)))))
+	  "
+behavior : process (clk) is
     variable input_x, input_y : complex := (0.0, 0.0);
     variable real_part_product_1, real_part_product_2,
-             imag_part_product_1, imag_part_product_2 := 0.0;
+             imag_part_product_1, imag_part_product_2 : real := 0.0;
     variable product, sum : complex := (0.0, 0.0);
     variable real_accumulator_ovf,
              imag_accumulator_ovf : boolean := false;
@@ -1183,56 +1256,40 @@ begin
       input_x := x_complex;
       input_y := y_complex;
     end if;
-  end process behavior;
+  end process behavior;"))
+  (with-optima-frob (design-unit)
+    (frob '(:design-unit (:use (:compound cl-vhdl::ieee (:dot cl-vhdl::math-complex) (:dot :all)))
+	    (:architecture cl-vhdl::behavioral cl-vhdl::mac
+	     (:signal complex nil cl-vhdl::x-complex cl-vhdl::y-complex
+	      cl-vhdl::s-complex)
+	     (:<= cl-vhdl::x-complex
+	      (:waveform
+	       ((:aggregate (:compound cl-vhdl::to-real (:paren cl-vhdl::x-real))
+			    (:compound cl-vhdl::to-real (:paren cl-vhdl::x-imag))))))
+	     (:label cl-vhdl::behavior
+	      (:process (cl-vhdl::clk)
+			(:variable complex (:aggregate 0.0 0.0) cl-vhdl::input-x cl-vhdl::input-y)
+			(:cond
+			  ((:compound cl-vhdl::rising-edge (:paren cl-vhdl::clk))
+			   (nil cl-vhdl::asdf nil :|;|)))))
+	     (:<= cl-vhdl::s-imag
+	      (:waveform
+	       ((:compound cl-vhdl::to-sfixed
+			   (:paren (:compound cl-vhdl::s-complex (:dot cl-vhdl::im))
+				   cl-vhdl::s-imag)))))))
+	  "
+use ieee.math_complex.all;
 
-  s_real <= to_sfixed(s_complex.re, s_real);
-  s_imag <= to_sfixed(s_complex.im, s_imag);
-
-end architecture behavioral;")
-    (frob nil "
-
-entity mac_test is
-end entity mac_test;")
-    (frob nil "
-
-library ieee;
-use ieee.std_logic_1164.all, ieee.fixed_pkg.all,
-    ieee.math_complex.all;
-
-architecture bench_behavioral of mac_test is
-
-  signal clk, reset, ovf : std_ulogic := '0';
-  signal x_real, x_imag,
-         y_real, y_imag,
-         s_real, s_imag : u_sfixed(0 downto -15);
-
-  signal x, y, s : complex := (0.0, 0.0);
-
-  constant Tpw_clk : time := 50 ns;
-
+architecture behavioral of mac is
+  signal x_complex, y_complex, s_complex : complex;
 begin
-
-  x_real <= x.re; x_imag <= x.im;
-  y_real <= y.re; y_imag <= y.im;
-
-  dut := entity work.mac(behavioral)
-    port map ( clk, reset, x_real, x_imag, y_real, y_imag, s_real, s_imag, ovf );
-
-  s <= (s_real, s_imag);
-
-  clock_gen : process is
+  x_complex <= ( to_real(x_real), to_real(x_imag) );
+  behavior : process (clk) is
+    variable input_x, input_y : complex := (0.0, 0.0);
   begin
-    clk <= '1' after Tpw_clk, '0' after 2 * Tpw_clk;
-    wait for 2 * Tpw_clk;
-  end process clock_gen;
-
-  stimulus : process is
-  begin
-    reset <= '1';
-    wait until not clk;
-    x <= (+0.5, +0.5); y <= (+0.5, +0.5); reset <= '1';
-    wait until not clk;
-    x <= (+0.1, -0.1); y <= (+0.1, +0.1); reset <= '0';
-    wait until not clk;
-  end process stimulus;
-end architecture bench_behavioral;")))
+    if rising_edge(clk) then
+      asdf;
+    end if;
+  end process behavior;
+  s_imag <= to_sfixed(s_complex.im, s_imag);
+end architecture behavioral;")))
