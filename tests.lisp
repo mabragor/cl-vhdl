@@ -1432,3 +1432,12 @@ end architecture behavioral;")))
                generic map ( Tprop => 2 ns, Tsetup => 2 ns, Thold => 1 ns )
                port map ( clk => clk, clr => clr, d => d(0), q => q(0) );")
     ))
+
+(test binding-for
+  (with-optima-frob (component-configuration)
+    (frob '(:for (cl-vhdl::flipflop cl-vhdl::bit0 cl-vhdl::bit1)
+	    (:use (:entity (:compound cl-vhdl::work (:dot cl-vhdl::edge-triggered-dff)
+				      (:paren cl-vhdl::basic)))))
+	  "for bit0, bit1 : flipflop
+             use entity work.edge_triggered_Dff(basic);
+           end for;")))

@@ -154,12 +154,21 @@
 					       "    { USE VUNIT VERIFICATION-UNIT-name {, ... } ; }"
 					       "[ END FOR ; ]"))
 
-(define-ebnf-rule component-specification "( INSTANTIATION-label {, ...} | OTHERS | ALL ) : COMPONENT-name")
+(define-ebnf-rule component-specification "( INSTANTIATION-label {, ...} | OTHERS | ALL ) : COMPONENT-name"
+  `(,3rd ,@(if (atom 1st) `(,1st) 1st)))
 
-(define-ebnf-rule binding-indication ("USE ( ENTITY ENTITY-name [ (( ARCHITECTURE-identifier )) ]"
-				      "       | CONFIGURATION CONFIGURATION-name | OPEN )"
+(define-ebnf-rule binding-indication ("USE ( entity-binding-head | configuration-binding-head  | OPEN )"
 				      "[ GENERIC MAP (( GENERIC-association-list )) ]"
-				      "[ PORT MAP (( PORT-association-list )) ]"))
+				      "[ PORT MAP (( PORT-association-list )) ]")
+  `(:use ,2nd ,@(if 3rd `((:generic-map ,@(cadddr 3rd))))
+	 ,@(if 4th `((:port-map ,@(cadddr 4th))))))
+
+
+(define-ebnf-rule entity-binding-head "ENTITY ENTITY-name [ (( ARCHITECTURE-identifier )) ]"
+  `(:entity ,2nd ,@(if 3rd `(,(cadr 3rd)))))
+
+(define-ebnf-rule configuration-binding-head "CONFIGURATION CONFIGURATION-name")
+
 
 (define-ebnf-rule disconnection-specification ("DISCONNECT ( SIGNAL-name {, ...} | OTHERS | ALL ) : type-mark"
 					       "    AFTER TIME-expression ;"))

@@ -90,7 +90,12 @@
 					   "    [ binding-indication ; ]"
 					   "    { USE VUNIT VERIFICATION-UNIT-name {, ... } ; }"
 					   "    [ block-configuration ]"
-					   "END FOR ;"))
+					   "END FOR ;")
+  `(:for ,2nd ,@(if 3rd `(,(car 3rd)))
+	 ,@(mapcar (lambda (x)
+		     `(:use-vunit ,@(caddr x)))
+		   4th)
+	 ,@(if 5th `(,5th))))
 
 (define-ebnf-rule context-declaration ("CONTEXT identifier IS"
 				       "    { library-clause | use-clause | context-reference }"
