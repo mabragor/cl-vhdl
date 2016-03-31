@@ -9,7 +9,9 @@
 				       "    { package-declarative-item }"
 				       "END [ PACKAGE ] [ identifier ] ;")
   `(:package ,2nd
-	     ,@(aif 4th it)
+	     ,@(if 4th `((:generic ,@(caddr 4th))))
+	     ,@(if (and 4th (nth 5 4th))
+		   `((:generic-map ,@(cadddr (nth 5 4th)))))
 	     ,@5th))
 
 (define-ebnf-rule package-declarative-item ("subprogram-declaration | subprogram-instantiation-declaration"
@@ -40,7 +42,8 @@
 						 "| triple-dot-statement" ))
 
 (define-ebnf-rule package-instantiation-declaration ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"
-						      "    [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
+						     "    [ GENERIC MAP (( GENERIC-association-list )) ] ;")
+  `(:new-package ,2nd ,5th ,@(if 6th (cadddr 6th))))
 
 (define-ebnf-rule subprogram-specification "procedure-specification | function-specification")
 
@@ -50,7 +53,7 @@
 					   "    [ [ PARAMETER ] (( PARAMETER-interface-list )) ]")
   `(:procedure ,2nd ,@(if 3rd `((:generic ,@(caddr 3rd))))
 	       ,@(if (and 3rd (nth 4 3rd))
-		     `((:generic-map ,@(caddr (nth 4 3rd)))))
+		     `((:generic-map ,@(cadddr (nth 4 3rd)))))
 	       (:parameter ,@(if 4th (caddr 4th)))))
 
 (define-ebnf-rule function-specification ("[ PURE | IMPURE ] FUNCTION ( identifier | operator-symbol )"
@@ -63,7 +66,7 @@
      ,3rd
      ,@(if 4th `((:generic ,@(caddr 4th))))
      ,@(if (and 4th (nth 4 4th))
-	   `((:generic-map ,@(caddr (nth 4 4th)))))
+	   `((:generic-map ,@(cadddr (nth 4 4th)))))
      (:parameter ,@(if 5th (caddr 5th)))
      (:return-type ,7th)))
 
@@ -89,7 +92,9 @@
 
 (define-ebnf-rule subprogram-instantiation-declaration ("( PROCEDURE | FUNCTION ) identifier IS"
 							 "    NEW UNINSTANTIATED-SUBPROGRAM-name [ signature ]"
-							 "        [ GENERIC MAP (( GENERIC-association-list )) ] ;"))
+							 "        [ GENERIC MAP (( GENERIC-association-list )) ] ;")
+  `(,(if (eq :procedure 1st) :new-procedure :new-function)
+     ,2nd ,5th ,@(if 6th `((:signature ,6th))) ,@(if 7th (cadddr 7th))))
 
 (define-ebnf-rule type-declaration ("TYPE identifier IS type-definition ;"
 				    "| TYPE identifier ; ")

@@ -23,10 +23,27 @@
 (define-ebnf-rule interface-type-declaration "TYPE identifier")
 
 (define-ebnf-rule interface-subprogram-declaration
-  ("( PROCEDURE identifier [ [ PARAMETER ] ( PARAMETER_interface_list ) ]"
-   "   | [ PURE | IMPURE ] FUNCTION (( identifier | operator-symbol ))"
-   "                       [ [ PARAMETER ] ( PARAMETER-interface-list ) ] RETURN type-mark )"
-   "[ IS ( SUBPROGRAM-name | <> ) ]"))
+    "(interface-procedure-declaration | interface-function-declaration) [ IS ( SUBPROGRAM-name | <> ) ]"
+  (if 2nd
+      `(,@1st ,2nd)
+      1st))
+
+(define-ebnf-rule interface-procedure-declaration
+    "PROCEDURE identifier [ [ PARAMETER ] (( PARAMETER_interface_list )) ]"
+  `(:procedure ,2nd (:parameter ,@(if 3rd (caddr 3rd)))))
+
+
+(define-ebnf-rule interface-function-declaration
+    ("[ PURE | IMPURE ] FUNCTION ( identifier | operator-symbol )"
+     "[ [ PARAMETER ] (( PARAMETER-interface-list )) ] RETURN type-mark")
+  `(,(cond ((eq :pure 1st) :pure-function)
+	   ((eq :impure 1st) :impure-function)
+	   (t :function))
+     ,3rd
+     (:parameter ,@(if 4th (caddr 4th)))
+     (:return-type ,6th)))
+
+
 
 (define-ebnf-rule interface-package-declaration
   ("PACKAGE identifier IS NEW UNINSTANTIATED-PACKAGE-name"

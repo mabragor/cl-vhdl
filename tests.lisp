@@ -1312,3 +1312,99 @@ end architecture behavioral;")))
     (frob '(:alias "*" "and" (:signature bit bit (:return bit)))
 	  "alias \"*\" is \"and\" [ bit, bit return bit ];")
     ))
+
+(test interface-subprogram-declaration
+  (with-optima-frob (interface-subprogram-declaration)
+    (frob '(:function cl-vhdl::increment (:parameter (:sig-var-con cl-vhdl::count-type nil cl-vhdl::x))
+	    (:return-type cl-vhdl::count-type))
+	  "function increment ( x : count_type )
+                                          return count_type")
+    (frob '(:function cl-vhdl::minimum (:parameter (:sig-var-con t nil cl-vhdl::l cl-vhdl::r))
+	    (:return-type t) (:is :<>))
+	  "function minimum ( L, R : T ) return T is <>")
+    ))
+	  
+(test generic-entities
+  (with-optima-frob (entity-declaration)
+    (frob '(:entity cl-vhdl::and2 (:generic (:sig-var-con time nil cl-vhdl::tpd))
+	    (:port (:sig-var-con bit nil :in cl-vhdl::a cl-vhdl::b)
+	     (:sig-var-con bit nil :out cl-vhdl::y)))
+	  "entity and2 is
+             generic ( Tpd : time );
+             port ( a, b : in bit; y : out bit );
+           end entity and2;")
+    (frob '(:entity cl-vhdl::generic-mux2 (:generic (:type cl-vhdl::data-type))
+	    (:port (:sig-var-con bit nil :in cl-vhdl::sel)
+	     (:sig-var-con cl-vhdl::data-type nil :in cl-vhdl::a cl-vhdl::b)
+	     (:sig-var-con cl-vhdl::data-type nil :out cl-vhdl::z)))
+	  "entity generic_mux2 is
+             generic ( type data_type );
+             port    ( sel : in bit; a, b : in data_type;
+                       z : out data_type );
+           end entity generic_mux2;")
+    (frob '(:entity cl-vhdl::generic-counter
+	    (:generic (:type cl-vhdl::count-type)
+	     (:constant cl-vhdl::count-type nil cl-vhdl::reset-value)
+	     (:function cl-vhdl::increment
+	      (:parameter (:sig-var-con cl-vhdl::count-type nil cl-vhdl::x))
+	      (:return-type cl-vhdl::count-type)))
+	    (:port (:sig-var-con bit nil :in cl-vhdl::clk cl-vhdl::reset)
+	     (:sig-var-con cl-vhdl::count-type nil :out cl-vhdl::data)))
+	  "entity generic_counter is
+             generic ( type count_type;
+                       constant reset_value : count_type;
+                       function increment ( x : count_type )
+                                          return count_type );
+             port ( clk, reset : in bit;
+                    data : out count_type );
+           end entity generic_counter;"))
+  (with-optima-frob (component-instantiation-statement)
+    (frob '(:instance cl-vhdl::gate1
+	    (:entity (:compound cl-vhdl::work (:dot cl-vhdl::and2) (:paren cl-vhdl::simple)))
+	    (:generic-map (:=> cl-vhdl::tpd (cl-vhdl::ns 2)))
+	    (:port-map (:=> cl-vhdl::a cl-vhdl::sig1) (:=> cl-vhdl::b cl-vhdl::sig2)
+	     (:=> cl-vhdl::y cl-vhdl::sig-out)))
+	  "gate1 : entity work.and2(simple)
+             generic map ( Tpd => 2 ns )
+             port map ( a => sig1, b => sig2, y => sig_out );")
+    ))
+
+(test generic-packages
+  (with-optima-frob (package-declaration)
+    (frob '(:package cl-vhdl::generic-stacks (:generic (:sig-var-con cl-vhdl::positive nil cl-vhdl::size)
+					      (:type cl-vhdl::element-type))
+	    (:type cl-vhdl::stack-array
+	     (:array cl-vhdl::element-type (:to 0 (:- cl-vhdl::size 1)))))
+	  "package generic_stacks is
+             generic ( size : positive; type element_type );
+             type stack_array is array (0 to size-1) of element_type;
+           end package generic_stacks;"))
+  (with-optima-frob (package-instantiation-declaration)
+    (frob '(:new-package cl-vhdl::address-stacks (:compound cl-vhdl::work (:dot cl-vhdl::generic-stacks))
+	    (:=> cl-vhdl::size 8) (:=> cl-vhdl::element-type (:compound cl-vhdl::unsigned (:downto 23 0))))
+	  "package address_stacks is new work.generic_stacks
+             generic map ( size => 8, element_type => unsigned(23 downto 0) );")
+    ))
+
+(test generic-subprograms
+  (with-optima-frob (subprogram-body)
+    (frob '(:procedure cl-vhdl::swap (:generic (:type t))
+	    (:parameter (:sig-var-con t nil :inout cl-vhdl::a cl-vhdl::b))
+	    (:variable t nil cl-vhdl::temp) (:= cl-vhdl::temp cl-vhdl::a)
+	    (:= cl-vhdl::a cl-vhdl::b) (:= cl-vhdl::b cl-vhdl::temp))
+	  "procedure swap
+             generic (type T)
+             parameter ( a, b : inout T ) is
+             variable temp : T;
+           begin
+             temp := a; a := b; b := temp;
+           end procedure swap;"))
+  (with-optima-frob (subprogram-instantiation-declaration)
+    (frob '(:new-procedure cl-vhdl::int-swap cl-vhdl::swap (:=> t integer))
+	  "procedure int_swap is new swap
+             generic map ( T => integer );")
+    (frob '(:new-procedure cl-vhdl::combine-vec-with-bit cl-vhdl::combine
+	    (:signature (t bit)) (:=> t bit-vector))
+	  "procedure combine_vec_with_bit is new combine[T, bit]
+             generic map ( T => bit_vector );")
+    ))
