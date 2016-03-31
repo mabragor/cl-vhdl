@@ -1441,3 +1441,82 @@ end architecture behavioral;")))
 	  "for bit0, bit1 : flipflop
              use entity work.edge_triggered_Dff(basic);
            end for;")))
+
+(test configuration-declaration
+  (with-optima-frob (configuration-declaration)
+    (frob '(:configuration cl-vhdl::reg4-gate-level cl-vhdl::reg4
+	    (:for cl-vhdl::struct
+	     (:for (cl-vhdl::flipflop cl-vhdl::bit0)
+	      (:use (:entity (:compound cl-vhdl::edge-triggered-dff (:paren cl-vhdl::hi-fanout)))))
+	     (:for (cl-vhdl::flipflop :others)
+	      (:use (:entity (:compound cl-vhdl::edge-triggered-dff (:paren cl-vhdl::basic)))))))
+	  "configuration reg4_gate_level of reg4 is
+             for struct
+                 for bit0 : flipflop
+                     use entity edge_triggered_Dff(hi_fanout);
+                 end for;
+
+                 for others : flipflop
+                     use entity edge_triggered_Dff(basic);
+                 end for;
+             end for;
+           end configuration reg4_gate_level;")
+    (frob '(:configuration cl-vhdl::full cl-vhdl::counter
+	    (:for cl-vhdl::registered
+	     (:for (cl-vhdl::digit-register :all)
+	      (:use (:entity (:compound cl-vhdl::work (:dot cl-vhdl::reg4) (:paren cl-vhdl::struct))))
+	      (:for cl-vhdl::struct
+		    (:for (cl-vhdl::flipflop cl-vhdl::bit0)
+			  (:use (:entity (:compound cl-vhdl::edge-triggered-dff (:paren cl-vhdl::hi-fanout)))))
+		    (:for (cl-vhdl::flipflop :others)
+			  (:use (:entity (:compound cl-vhdl::edge-triggered-dff (:paren cl-vhdl::basic)))))))))
+	  "configuration full of counter is
+             for registered
+               for all : digit_register
+                 use entity work.reg4(struct);
+
+                 for struct
+                   for bit0 : flipflop
+                     use entity edge_triggered_Dff(hi_fanout);
+                   end for;
+
+                   for others : flipflop
+                     use entity edge_triggered_Dff(basic);
+                   end for;
+                 end for;
+               end for;
+             end for;
+           end configuration full;")
+    ))
+
+(test binding-indication
+  (with-optima-frob (component-configuration)
+    (frob '(:for (cl-vhdl::reg4 cl-vhdl::flag-reg)
+	    (:use (:configuration (:compound cl-vhdl::work (:dot cl-vhdl::reg4-gate-level)))))
+	  "for flag_reg : reg4
+             use configuration work.reg4_gate_level;
+           end for;")))
+
+(test architecture-body-3
+  (with-optima-frob (architecture-body)
+    (frob '(:architecture cl-vhdl::top-level cl-vhdl::alarm-clock
+	    (:use (:compound cl-vhdl::work (:dot cl-vhdl::counter-types) (:dot cl-vhdl::digit)))
+	    (:signal bit nil cl-vhdl::reset-to-midnight cl-vhdl::seconds-clk)
+	    (:signal cl-vhdl::digit nil cl-vhdl::seconds-units cl-vhdl::seconds-tens)
+	    (:instance cl-vhdl::seconds
+	     (:configuration (:compound cl-vhdl::work (:dot cl-vhdl::counter-down-to-gate-level)))
+	     (:port-map (:=> cl-vhdl::clk cl-vhdl::seconds-clk)
+	      (:=> cl-vhdl::clr cl-vhdl::reset-to-midnight)
+	      (:=> cl-vhdl::q0 cl-vhdl::seconds-units)
+	      (:=> cl-vhdl::q1 cl-vhdl::seconds-tens))))
+	  "architecture top_level of alarm_clock is
+             use work.counter_types.digit;
+             signal reset_to_midnight, seconds_clk : bit;
+             signal seconds_units, seconds_tens : digit;
+             -- ...
+           begin
+             seconds : configuration work.counter_down_to_gate_level
+               port map ( clk => seconds_clk, clr => reset_to_midnight,
+                          q0 => seconds_units, q1 => seconds_tens );
+             -- ...
+           end architecture top_level;")))

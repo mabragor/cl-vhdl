@@ -78,13 +78,29 @@
 					     "   { use-clause | attribute-specification | group-declaration }"
 					     "   { USE VUNIT VERIFICATION-UNIT-name {, ... } ; }"
 					     "   block-configuration"
-					     "END [ CONFIGURATION ] [ identifier ] ;"))
+					     "END [ CONFIGURATION ] [ identifier ] ;")
+  `(:configuration ,2nd ,4th ,@6th
+		   ,@(mapcar (lambda (x)
+			       `(:use-vunit ,@(caddr x)))
+			     7th)
+		   ,8th))
 
-(define-ebnf-rule block-configuration ("FOR ( ARCHITECTURE-name | BLOCK-STATEMENT-label"
-				       "       | GENERATE-STATEMENT-label"
-				       "         [ (( ( STATIC-discrete-range | STATIC-expression"
-				       "                | _ALTERNATIVE-label ) )) ] )"
-				       "END FOR ;"))
+
+(define-ebnf-rule block-configuration
+    ("FOR ( ARCHITECTURE-name"
+     "      | BLOCK-STATEMENT-label"
+     "      | generate-block-config-head )"
+     "{ use-clause }"
+     "{ block-configuration | component-configuration }"
+     "END FOR ;")
+  `(:for ,2nd ,@3rd ,@4th))
+
+(define-ebnf-rule generate-block-config-head
+    ("GENERATE-STATEMENT-label [ (( ( STATIC-discrete-range | STATIC-expression"
+     "                                                      | _ALTERNATIVE-label ) )) ]")
+  (if (not 2nd)
+      1st
+      `(:compound ,1st (:paren ,(cadr 2nd)))))
 
 (define-ebnf-rule component-configuration ("FOR component-specification"
 					   "    [ binding-indication ; ]"
