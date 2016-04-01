@@ -104,20 +104,35 @@
 
 (define-ebnf-rule for-generate-statement
   ("GENERATE-label : FOR identifier IN discrete-range GENERATE generate-statement-body"
-   "END GENERATE [ GENERATE-label ] ;"))
+   "END GENERATE [ GENERATE-label ] ;")
+  `(:generate-for ,1st ,4th ,6th ,@8th))
 
 (define-ebnf-rule if-generate-statement
   ("GENERATE-label : IF [ ALTERNATIVE-label : ] condition GENERATE generate-statement-body"
    "{ ELSIF [ ALTERNATIVE-label : ] condition GENERATE generate-statement-body }"
    "[ ELSE [ ALTERNATIVE-label : ] GENERATE generate-statement-body ]"
-   "END GENERATE [ GENERATE-label ] ;"))
+   "END GENERATE [ GENERATE-label ] ;")
+  `(:generate-if ,1st
+		 (,(if 4th (car 4th)) ,5th ,@7th)
+		 ,@(mapcar (lambda (x)
+			     `(,(if (cadr x) (caadr x)) ,(caddr x) ,@(car (cddddr x))))
+			   8th)
+		 ,@(if 9th `((,(if (cadr 9th) (caadr 9th)) t ,@(cadddr 9th))))))
 
 (define-ebnf-rule case-generate-statement
   ("GENERATE-label : CASE expression GENERATE"
    "  ( WHEN [ ALTERNATIVE-label : ] choices => generate-statement-body ) { ... }"
-   "END GENERATE [ GENERATE-label ] ;"))
+   "END GENERATE [ GENERATE-label ] ;")
+  `(:generate-case ,1st ,4th
+		   ,@(mapcar (lambda (x)
+			       `(,(if (cadr x) (caadr x)) ,(caddr x) ,@(car (cddddr x))))
+			     6th)))
 
 (define-ebnf-rule generate-statement-body
-  ("[ { block-declarative-item } BEGIN ] { concurrent-statement } [ END [ ALTERNATIVE-label ] ; ]"))
+    "[ { block-declarative-item } BEGIN ] { concurrent-statement } [ END [ ALTERNATIVE-label ] ; ]"
+  `(,@(if 1st (car 1st)) ,@2nd))
+
+
+
 
 

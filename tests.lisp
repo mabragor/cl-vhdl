@@ -1525,3 +1525,191 @@ end architecture behavioral;")))
                           q0 => seconds_units, q1 => seconds_tens );
              -- ...
            end architecture top_level;")))
+
+(test generate
+  (with-optima-frob (generate-statement)
+    (frob '(:generate-for cl-vhdl::cell-array cl-vhdl::bit-index (:to 0 (:- cl-vhdl::width 1))
+	    (:signal cl-vhdl::std-ulogic nil cl-vhdl::data-unbuffered)
+	    (:instance cl-vhdl::cell-storage (:component cl-vhdl::d-flipflop)
+	     (:port-map (:=> cl-vhdl::clk cl-vhdl::clock)
+	      (:=> cl-vhdl::d (:compound cl-vhdl::data-in (:paren cl-vhdl::bit-index)))
+	      (:=> cl-vhdl::q cl-vhdl::data-unbuffered))))
+	  "cell_array : for bit_index in 0 to width - 1 generate
+             signal data_unbuffered : std_ulogic;
+           begin
+             cell_storage : component D_flipflop
+               port map ( clk => clock, d => data_in(bit_index),
+                          q => data_unbuffered );
+           end generate;")
+    (frob '(:generate-if cl-vhdl::reg
+	    (nil (:= cl-vhdl::index 0)
+	     (:instance cl-vhdl::cell (:component cl-vhdl::master-slave-flipflop)
+	      (:port-map cl-vhdl::phi1 cl-vhdl::phi2
+			 (:=> cl-vhdl::d cl-vhdl::serial-data-in)
+			 (:=> cl-vhdl::q
+			      (:compound cl-vhdl::normalized-parallel-data
+					 (:paren cl-vhdl::index))))))
+	    (nil t (:instance cl-vhdl::cell (:component cl-vhdl::master-slave-flipflop)
+		    (:port-map cl-vhdl::phi1 cl-vhdl::phi2
+			       (:=> cl-vhdl::d
+				    (:compound cl-vhdl::normalized-parallel-data
+					       (:paren (:- cl-vhdl::index 1))))
+			       (:=> cl-vhdl::q
+				    (:compound cl-vhdl::normalized-parallel-data
+					       (:paren cl-vhdl::index)))))))
+	  "reg : if index = 0 generate
+             cell : component master_slave_flipflop
+               port map ( phi1, phi2, d => serial_data_in, q => normalized_parallel_data(index) );
+           else generate
+             cell : component master_slave_flipflop
+               port map ( phi1, phi2, d => normalized_parallel_data(index - 1),
+                          q => normalized_parallel_data(index) );
+           end generate;")
+    (frob '(:generate-case cl-vhdl::mult-structure cl-vhdl::implementation
+	    (nil cl-vhdl::single-cycle
+	     (:signal cl-vhdl::asdf nil cl-vhdl::real-pp1 cl-vhdl::real-pp2)
+	     (:instance cl-vhdl::real-mult1 (:component cl-vhdl::multiplier)
+	      (:port-map (:=> cl-vhdl::a cl-vhdl::b))))
+	    (nil cl-vhdl::multicycle
+	     (:signal cl-vhdl::asdf nil cl-vhdl::real-pp1 cl-vhdl::real-pp2)
+	     (:instance cl-vhdl::real-mult1 (:component cl-vhdl::multiplier)
+	      (:port-map (:=> cl-vhdl::c cl-vhdl::d)))))
+	  "mult_structure : case implementation generate
+             when single_cycle =>
+                 signal real_pp1, real_pp2 : asdf;
+               begin
+                 real_mult1 : component multiplier
+                   port map (a => b);
+               end;
+             when multicycle =>
+                 signal real_pp1, real_pp2 : asdf;
+               begin
+                 real_mult1 : component multiplier
+                   port map (c => d);
+               end;
+           end generate mult_structure;")
+    ))
+
+(test recursive-clock-fanout
+  (with-optima-frob (design-unit)
+    (frob '(:design-unit
+	    (:library cl-vhdl::ieee)
+	    (:use (:compound cl-vhdl::ieee (:dot cl-vhdl::std-logic-1164) (:dot :all)))
+	    (:entity cl-vhdl::fanout-tree
+	     (:generic (:sig-var-con cl-vhdl::natural nil cl-vhdl::height))
+	     (:port (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::input)
+	      (:sig-var-con (:compound cl-vhdl::std-ulogic-vector
+				       (:to 0 (:- (:** 2 cl-vhdl::height) 1)))
+			    nil :out cl-vhdl::output))))
+	  "library ieee; use ieee.std_logic_1164.all;
+
+           entity fanout_tree is
+             generic ( height : natural );
+             port ( input : in std_logic;
+                    output : out std_ulogic_vector (0 to 2**height - 1) );
+           end entity fanout_tree;")
+    (frob '(:design-unit
+	    (:architecture cl-vhdl::recursive cl-vhdl::fanout-tree
+	     (:generate-if cl-vhdl::tree
+	      (nil (:= cl-vhdl::height 0)
+		   (:<= (:compound cl-vhdl::output (:paren 0)) (:waveform (cl-vhdl::input))))
+	      (nil t
+		   (:signal cl-vhdl::std-ulogic nil cl-vhdl::buffered-input-0
+			    cl-vhdl::buffered-input-1)
+		   (:instance cl-vhdl::buf-0
+			      (:entity (:compound cl-vhdl::work (:dot cl-vhdl::buf) (:paren cl-vhdl::basic)))
+			      (:port-map (:=> cl-vhdl::a cl-vhdl::input)
+					 (:=> cl-vhdl::y cl-vhdl::buffered-input-0)))
+		   (:instance cl-vhdl::subtree-0
+			      (:entity (:compound cl-vhdl::work (:dot cl-vhdl::fanout-tree)
+						  (:paren cl-vhdl::recursive)))
+			      (:generic-map (:=> cl-vhdl::height (:- cl-vhdl::height 1)))
+			      (:port-map (:=> cl-vhdl::input cl-vhdl::buffered-input-0)
+					 (:=> cl-vhdl::output
+					      (:compound cl-vhdl::output
+							 (:to 0 (:- (:** 2 (:- cl-vhdl::height 1)) 1))))))
+		   (:instance cl-vhdl::buf-1
+			      (:entity (:compound cl-vhdl::work (:dot cl-vhdl::buf) (:paren cl-vhdl::basic)))
+			      (:port-map (:=> cl-vhdl::a cl-vhdl::input)
+					 (:=> cl-vhdl::y cl-vhdl::buffered-input-1)))
+		   (:instance cl-vhdl::subtree-1
+			      (:entity (:compound cl-vhdl::work (:dot cl-vhdl::fanout-tree)
+					  (:paren cl-vhdl::recursive)))
+			      (:generic-map (:=> cl-vhdl::height (:- cl-vhdl::height 1)))
+			      (:port-map (:=> cl-vhdl::input cl-vhdl::buffered-input-1)
+					 (:=> cl-vhdl::output
+					      (:compound cl-vhdl::output
+							 (:to (:** 2 (:- cl-vhdl::height 1))
+							      (:- (:** 2 cl-vhdl::height) 1))))))))))
+	  "architecture recursive of fanout_tree is
+           begin
+             tree : if height = 0 generate
+               output(0) <= input;
+             else generate
+                 signal buffered_input_0, buffered_input_1 : std_ulogic;
+               begin
+                 buf_0 : entity work.buf(basic)
+                   port map ( a => input, y => buffered_input_0 );
+                 subtree_0 : entity work.fanout_tree(recursive)
+                   generic map ( height => height - 1 )
+                   port map ( input => buffered_input_0, 
+                              output => output(0 to 2**(height - 1) - 1) );
+                 buf_1 : entity work.buf(basic)
+                   port map ( a => input, y => buffered_input_1 );
+                 subtree_1 : entity work.fanout_tree(recursive)
+                   generic map ( height => height - 1 )
+                   port map ( input => buffered_input_1, 
+                              output => output(2**(height - 1) to 2**height - 1) );
+               end;
+             end generate tree;
+           end architecture recursive;")
+    ))
+	  
+
+(test configuration-declaration-2
+  (with-optima-frob (configuration-declaration)
+    (frob '(:configuration cl-vhdl::widget-cfg cl-vhdl::arith-unit
+	    (:for cl-vhdl::ripple-adder
+	     (:for cl-vhdl::adder
+	      (:for (:compound cl-vhdl::adder-cell (:paren cl-vhdl::most-significant))
+		    (:for (cl-vhdl::full-adder cl-vhdl::add-bit)
+			  (:use
+			   (:entity
+			    (:compound cl-vhdl::widget-lib (:dot cl-vhdl::full-adder)
+				       (:paren cl-vhdl::asic-cell))))))
+	      (:for (:compound cl-vhdl::adder-cell (:paren cl-vhdl::middle))
+		    (:for (cl-vhdl::full-adder cl-vhdl::add-bit)
+			  (:use
+			   (:entity
+			    (:compound cl-vhdl::widget-lib (:dot cl-vhdl::full-adder)
+				       (:paren cl-vhdl::asic-cell))))))
+	      (:for (:compound cl-vhdl::adder-cell (:paren cl-vhdl::least-significant))
+		    (:for (cl-vhdl::half-adder cl-vhdl::add-bit)
+			  (:use
+			   (:entity
+			    (:compound cl-vhdl::widget-lib (:dot cl-vhdl::half-adder)
+				       (:paren cl-vhdl::asic-cell)))))))))
+	  "configuration widget_cfg of arith_unit is
+             for ripple_adder
+               for adder
+                 for adder_cell(most_significant)
+                   for add_bit: full_adder
+                     use entity widget_lib.full_adder(asic_cell);
+                   end for;
+                 end for;
+
+                 for adder_cell(middle)
+                   for add_bit: full_adder
+                     use entity widget_lib.full_adder(asic_cell);
+                   end for;
+                 end for;
+
+                 for adder_cell(least_significant)
+                   for add_bit: half_adder
+                     use entity widget_lib.half_adder(asic_cell);
+                   end for;
+                 end for;
+               end for;
+            end for;
+          end configuration widget_cfg;")
+    ))
