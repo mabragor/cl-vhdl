@@ -7,7 +7,7 @@
   :license "MIT"
   :serial t
   :depends-on (#:iterate #:cl-itertools #:cl-ppcre #:cl-interpol #:esrap-liquid
-			 #:cg-common-ground #:alexandria)
+			 #:alexandria)
   :components ((:file "package")
 	       (:module "parse"
 			:pathname "src/parse/"

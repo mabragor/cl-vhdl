@@ -5,6 +5,10 @@
   (defparameter *greedy-char-map* nil
     "In this, all the dynamically found misc keywords would be placed, for later greedy parsing"))
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun joinl (joinee lst)
+    (format nil (concatenate 'string "~{~a~^" joinee "~}") lst)))
+
 (define-ebnf-aux-rule big-letter () (character-ranges (#\A #\Z)))
 (define-ebnf-aux-rule small-letter () (character-ranges (#\a #\z)))
 (define-ebnf-aux-rule digit () (character-ranges (#\0 #\9)))
