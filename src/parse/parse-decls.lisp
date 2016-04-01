@@ -184,10 +184,17 @@
 (define-ebnf-rule disconnection-specification ("DISCONNECT ( SIGNAL-name {, ...} | OTHERS | ALL ) : type-mark"
 					       "    AFTER TIME-expression ;"))
 
-(define-ebnf-rule group-template-declaration "GROUP identifier IS (( ( entity-class [ <> ] ) {, ...} )) ;")
+(define-ebnf-rule group-template-declaration "GROUP identifier IS (( ( entity-class [ <> ] ) {, ...} )) ;"
+  `(:group-template ,2nd ,@(mapcar (lambda (x)
+				     (if (not (cadr x))
+					 (car x)
+					 x))
+				   5th)))
 
-(define-ebnf-rule group-declaration
-  "GROUP identifier : GROUP-TEMPLATE-name (( ( name | character-literal ) {, ...} )) ;")
+;; "GROUP identifier : GROUP-TEMPLATE-name (( ( name | character-literal ) {, ...} )) ;")
+(define-ebnf-rule group-declaration "GROUP identifier : function-call ;"
+  `(:group ,2nd ,(butlast 4th) ,(car (last 4th))))
+
 
 (define-ebnf-rule use-clause "USE selected-name {, ...} ;"
   `(:use ,@2nd))
