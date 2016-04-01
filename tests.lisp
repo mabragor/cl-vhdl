@@ -1713,3 +1713,37 @@ end architecture behavioral;")))
             end for;
           end configuration widget_cfg;")
     ))
+
+(test access-types
+  (with-optima-frob (type-declaration)
+    (frob '(:type cl-vhdl::natural-ptr (:access cl-vhdl::natural))
+	  "type natural_ptr is access natural;"))
+  (with-optima-frob (simple-variable-assignment)
+    (frob '(::= cl-vhdl::count (:new cl-vhdl::natural))
+	  "count := new natural;")
+    (frob '(::= (:compound cl-vhdl::count (:dot :all)) 10)
+	  "count.all := 10;")
+    (frob '(::= cl-vhdl::count (:new (:qualified (:aggregate 10) cl-vhdl::natural)))
+	  "count := new natural'(10);")
+    (frob '(::= cl-vhdl::bus-stimulus (:new (:qualified (:aggregate (cl-vhdl::ns 20) (:bin "0011"))
+					     cl-vhdl::stimulus-record)))
+	  "bus_stimulus := new stimulus_record'( 20 ns, B\"0011\" );")
+    (frob '(:= cl-vhdl::activation-times
+	    (:new (:qualified (:aggregate (:& (:compound cl-vhdl::activation-times (:dot :all))
+					      (:qualified (:aggregate (cl-vhdl::us 70) (cl-vhdl::us 100))
+							  cl-vhdl::time-array)))
+		   cl-vhdl::time-array)))
+	  "activation_times := new time_array'( activation_times.all
+                                                & time_array'(70 us, 100 us) );")
+    ))
+
+(test file-types
+  (with-optima-frob (type-declaration)
+    (frob '(:type cl-vhdl::integer-file (:file cl-vhdl::integer))
+	  "type integer_file is file of integer;"))
+  (with-optima-frob (file-declaration)
+    (frob '(:file cl-vhdl::integer-file (:path "lookup-value"))
+	  "file lookup_table_file : integer_file is \"lookup-value\";")
+    (frob '(:file cl-vhdl::load-file-type (:path cl-vhdl::load-file-name cl-vhdl::read-mode))
+	  "file load_file : load_file_type open read_mode is load_file_name;")
+    ))

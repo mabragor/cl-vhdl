@@ -52,7 +52,8 @@
 
 (define-ebnf-rule access-type-definition "ACCESS subtype-indication")
 
-(define-ebnf-rule file-type-definition "FILE OF type-mark")
+(define-ebnf-rule file-type-definition "FILE OF type-mark"
+  `(:file ,3rd))
 
 (define-ebnf-rule protected-type-declaration ("PROTECTED { protected-type-declarative-item }"
 					      "END PROTECTED [ identifier ]"))

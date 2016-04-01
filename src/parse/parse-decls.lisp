@@ -124,7 +124,8 @@
     ,5th ,(aif 6th (cadr it)) ,@3rd))
 
 (define-ebnf-rule file-declaration ("FILE identifier {, ... } : subtype-indication"
-				    "    [ [ OPEN FILE-OPEN-KIND-expression ] IS STRING-expression ] ;"))
+				    "    [ [ OPEN FILE-OPEN-KIND-expression ] IS STRING-expression ] ;")
+  `(:file ,4th ,@(if 5th `((:path ,(caddr 5th) ,@(if (car 5th) `(,(cadar 5th))))))))
 
 (define-ebnf-rule alias-declaration ("ALIAS ( identifier | character-literal | operator-symbol )"
 				     "    [ : subtype-indication ] IS name [ signature ] ;")
