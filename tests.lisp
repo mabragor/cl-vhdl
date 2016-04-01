@@ -1747,3 +1747,41 @@ end architecture behavioral;")))
     (frob '(:file cl-vhdl::load-file-type (:path cl-vhdl::load-file-name cl-vhdl::read-mode))
 	  "file load_file : load_file_type open read_mode is load_file_name;")
     ))
+
+(test external-names
+  (with-optima-frob (assertion-statement)
+    (frob '(:assert (:/= (:signal (:compound cl-vhdl::std-ulogic-vector (:to 0 4))
+			  (:abs-path cl-vhdl::tb cl-vhdl::duv cl-vhdl::controller cl-vhdl::state))
+		     "00000")
+	    (:report "Illegal controller state"))
+	  "assert <<signal .tb.duv.controller.state :
+                             std_ulogic_vector(0 to 4)>> /= \"00000\"
+             report \"Illegal controller state\";")
+    (with-optima-frob (external-name)
+      (frob '(:signal cl-vhdl::instruction-type
+	      (:rel-path :^ cl-vhdl::duv (:generate cl-vhdl::cores cl-vhdl::core-num)
+	       cl-vhdl::processor cl-vhdl::fetched-instruction))
+	    "<<signal ^.duv.cores(core_num).processor.fetched_instruction : instruction_type>>")
+      (frob '(:signal bit (:package-path cl-vhdl::work cl-vhdl::p1 cl-vhdl::p2 cl-vhdl::s))
+	    "<<signal @work.p1.p2.s : bit>>"))
+    ))
+
+(test force-release
+  (with-optima-frob (signal-assignment-statement)
+    (frob '(:<= cl-vhdl::current-state (:force) cl-vhdl::illegal-state-12)
+	  "current_state <= force illegal_state_12;")
+    (frob '(:<= cl-vhdl::current-state (:release))
+	  "current_state <= release;")
+    (frob '(:<= cl-vhdl::duv-bus (:force :out) "ZZZZ")
+	  "duv_bus <= force out \"ZZZZ\";")
+    (frob '(:<= cl-vhdl::duv-bus (:force :in) "XXXX")
+	  "duv_bus <= force in \"XXXX\";")
+    (frob '(:<= cl-vhdl::dut-d-bus (:force :in)
+	    (:when
+		((:= cl-vhdl::test-mode random)
+		 (:compound cl-vhdl::next-random-stim
+			    (:paren (:compound cl-vhdl::dut-d-bus (:attribute length)))))
+	      (t (:compound cl-vhdl::directed-stim (:paren cl-vhdl::test-count)))))
+	  "dut_d_bus <= force in next_random_stim(dut_d_bus'length) when test_mode = random
+                          else directed_stim(test_count);")
+    ))

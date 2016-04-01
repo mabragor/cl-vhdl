@@ -223,22 +223,27 @@
   `(,@2nd ,@(if 3rd `(,3rd))))
 
 (define-ebnf-rule external-name
-  ("<< CONSTANT external-pathname : subtype-indication >>"
-   "| << SIGNAL external-pathname : subtype-indication >>"
-   "| << VARIABLE external-pathname : subtype-indication >>"))
-
+    "<< ( CONSTANT | SIGNAL | VARIABLE ) external-pathname : subtype-indication >>"
+  `(,2nd ,5th ,3rd))
+  
 (define-ebnf-rule external-pathname
   "absolute-pathname | relative-pathname | package-pathname")
 
-(define-ebnf-rule absolute-pathname ". { pathname-element . } OBJECT-identifier")
+(define-ebnf-rule absolute-pathname ". { pathname-element . } OBJECT-identifier"
+  `(:abs-path ,@(mapcar #'car 2nd) ,3rd))
 
-(define-ebnf-rule relative-pathname "{ ^ . } { pathname-element . } OBJECT-identifier")
+(define-ebnf-rule relative-pathname "{ ^ . } { pathname-element . } OBJECT-identifier"
+  `(:rel-path ,@(mapcar #'car 1st) ,@(mapcar #'car 2nd) ,3rd))
 
 (define-ebnf-rule pathname-element
     ("ENTITY-identifier | COMPONENT-INSTANTIATION-label | BLOCK-label"
-     "| GENERATE-STATEMENT-label [ (( STATIC-expression )) ] | PACKAGE-identifier"))
+     "| generate-pathname-element | PACKAGE-identifier"))
 
-(define-ebnf-rule package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier")
+(define-ebnf-rule generate-pathname-element "GENERATE-STATEMENT-label [ (( STATIC-expression )) ]"
+  `(:generate ,1st ,@(if 2nd `(,(cadr 2nd)))))
+
+(define-ebnf-rule package-pathname "@ LIBRARY-identifier . { PACKAGE-identifier . } OBJECT-identifier"
+  `(:package-path ,2nd ,@(mapcar #'car 4th) ,5th))
 
 (define-ebnf-rule literal
   ("bit-string-literal | based-literal | physical-literal | decimal-literal | identifier"

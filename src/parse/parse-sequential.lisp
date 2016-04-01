@@ -56,7 +56,14 @@
 (define-ebnf-rule conditional-force-assignment
   ("[ label : ] name <= FORCE [ IN | OUT ] expression WHEN condition { ELSE expression WHEN condition }"
    "[ ELSE expression ] ;")
-  (wrapping-in-label))
+  (wrapping-in-label `(:<= ,2nd (:force ,@(if 5th `(,5th)))
+			   (:when (,8th ,6th)
+			     ,@(mapcar (lambda (x)
+					 `(,(cadddr x) ,(cadr x)))
+				       9th)
+			     ,@(if 10th `((t ,(cadr 10th))))))))
+
+
 
 (define-ebnf-rule selected-signal-assignment "selected-waveform-assignment | selected-force-assignment")
 
@@ -75,7 +82,15 @@
 (define-ebnf-rule selected-force-assignment
   ("[ label : ] WITH expression SELECT [ ? ] name <= FORCE [ IN | OUT ]"
    "{ expression WHEN choices , } expression WHEN choices ;")
-  (wrapping-in-label))
+  (wrapping-in-label `(:<= ,6th (:force ,@(if 9th `(,9th)))
+			   (,(if 5th :select? :select)
+			     ,3rd
+			     ,@(mapcar (lambda (x)
+					 `(,(caddr x) ,(car x)))
+				       10th)
+			     ;; NTH has a shift of index by one
+			     (,(nth 12 res) ,(nth 10 res))))))
+
 
 (define-ebnf-rule delay-mechanism "TRANSPORT | [ REJECT TIME-expression ] INERTIAL"
   (if (and (consp res) (< 1 (length res)))
