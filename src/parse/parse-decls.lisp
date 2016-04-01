@@ -140,12 +140,22 @@
   `(:component ,2nd ,@(if 4th `((:generic ,@(caddr 4th))))
 	       ,@(if 5th `((:port ,@(caddr 5th))))))
 
-(define-ebnf-rule attribute-declaration "ATTRIBUTE identifier | type-mark ;")
+(define-ebnf-rule attribute-declaration "ATTRIBUTE identifier : type-mark ;"
+  `(:attribute ,2nd ,4th))
 
-(define-ebnf-rule attribute-specification "ATTRIBUTE identifier OF entity-name-list | entity-class IS expression ;")
+(define-ebnf-rule attribute-specification "ATTRIBUTE identifier OF entity-name-list : entity-class IS expression ;"
+  `(:attribute-spec ,2nd ,4th ,6th ,8th))
 
 (define-ebnf-rule entity-name-list ("( ( identifier | character-literal | operator-symbol )[ signature ]){, ...}"
-				    "| OTHERS | ALL"))
+				    "| OTHERS | ALL")
+  (if (or (eq :others res) (eq :all res))
+      res
+      (mapcar (lambda (x)
+		(if (not (cadr x))
+		    (car x)
+		    x))
+	      res)))
+      
 
 (define-ebnf-rule entity-class ("ENTITY | ARCHITECTURE | CONFIGURATION | PACKAGE | PROCEDURE | FUNCTION"
 				"| TYPE | SUBTYPE | CONSTANT | SIGNAL | VARIABLE | FILE | COMPONENT | LABEL"

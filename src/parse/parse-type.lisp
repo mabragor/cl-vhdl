@@ -56,13 +56,15 @@
   `(:file ,3rd))
 
 (define-ebnf-rule protected-type-declaration ("PROTECTED { protected-type-declarative-item }"
-					      "END PROTECTED [ identifier ]"))
+					      "END PROTECTED [ identifier ]")
+  `(:protected ,@2nd))
 
 (define-ebnf-rule protected-type-declarative-item ("subprogram-declaration | _subprogram-instantiation-declaration"
 						   "| attribute-specification | use-clause"))
 
 (define-ebnf-rule protected-type-body ("PROTECTED BODY { protected-type-body-declarative-item }"
-				       "END PROTECTED BODY [ identifier ]"))
+				       "END PROTECTED BODY [ identifier ]")
+  `(:protected-body ,@3rd))
 
 (define-ebnf-rule protected-type-body-declarative-item ("subprogram-declaration | subprogram-body"
 							"| _subprogram-instantiation-declaration"

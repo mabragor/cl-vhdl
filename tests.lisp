@@ -1785,3 +1785,30 @@ end architecture behavioral;")))
 	  "dut_d_bus <= force in next_random_stim(dut_d_bus'length) when test_mode = random
                           else directed_stim(test_count);")
     ))
+
+(test protected-types
+  (with-optima-frob (type-declaration)
+    (frob '(:type cl-vhdl::shared-counter
+	    (:protected (:procedure cl-vhdl::reset (:parameter))
+	     (:procedure cl-vhdl::increment
+	      (:parameter (:sig-var-con integer nil cl-vhdl::by)))
+	     (:impure-function cl-vhdl::value (:parameter) (:return-type integer))))
+	  "type shared_counter is protected
+             procedure reset;
+             procedure increment ( by : integer := 1 );
+             impure function value return integer;
+           end protected shared_counter;"))
+  (with-optima-frob (variable-declaration)
+    (frob '(:shared-variable cl-vhdl::shared-counter nil cl-vhdl::event-counter)
+	  "shared variable event_counter : shared_counter;")
+    ))
+
+(test attribute-declaration
+  (with-optima-frob (attribute-declaration)
+    (frob '(:attribute cl-vhdl::cell-name cl-vhdl::string)
+	  "attribute cell_name : string;")))
+
+(test attribute-specification
+  (with-optima-frob (attribute-specification)
+    (frob '(:attribute-spec cl-vhdl::cell-name (cl-vhdl::std-cell) :architecture  "DFF_SR_QQNN")
+	  "attribute cell_name of std_cell : architecture is \"DFF_SR_QQNN\";")))
