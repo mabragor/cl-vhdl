@@ -26,6 +26,10 @@
 							   (:file "parse-type")
 							   (:file "parse-expressions")
 							   (:file "parse-misc")))))
+	       (:module "emit"
+			:pathname "src/emit/"
+			:serial t
+			:components ((:file "emitting")))
                (:file "cl-vhdl")
 	       (:static-file "sketches")))
 
