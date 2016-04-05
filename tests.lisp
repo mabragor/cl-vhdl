@@ -639,6 +639,10 @@
                       b : in word;
                       sum : out word );
            end entity adder;")
+    (frob '(:entity cl-vhdl::adder (:port (:sig-var-con cl-vhdl::word nil :in cl-vhdl::a)))
+	  "entity adder is
+               port ( a : in word; );
+           end entity adder;")
     (frob '(:entity cl-vhdl::program-rom
 	    (:port (:sig-var-con (:compound cl-vhdl::std-ulogic-vector (:downto 14 0)) nil :in cl-vhdl::address)
 	     (:sig-var-con (:compound cl-vhdl::std-ulogic-vector (:downto 7 0)) nil :out cl-vhdl::data)
@@ -1827,3 +1831,212 @@ end architecture behavioral;")))
 	    (:paren cl-vhdl::clk-phase1 cl-vhdl::clk-phase2))
 	  "group clock_pair : signal_pair ( clk_phase1, clk_phase2 );")
     ))
+
+(test multi-line-comment
+  (with-optima-frob (multi-line-comment)
+    (frob (list :comment _)
+	  "/*
+  port (
+    clk: in std_logic;
+    nreset: in std_logic;
+
+    all: out std_logic_vector(17 downto 0);       -- FLASH adr
+  noe_in: in std_logic;                                                 --
+                                                                        --input
+                                                                        --from
+                                                                        --ACEX--
+                                                                        --not used
+nce_in: in std_logic;                                                   --
+                                                                        --input
+                                                                        --from
+                                                                        --ACEX--
+                                                                        --not used
+noe: out std_logic;                                             -- output to FLASH
+nce: out std_logic;                                             -- output to FLASH
+d0in: in std_logic;                                                     -- D0
+                                                                        -- from FLASH
+d0out: out std_logic;                                           -- reseved
+                                                                -- DATA0 to ACEX
+
+nconf: out std_logic;                                           -- ACEX nConfig
+nstatus: in std_logic;                                                  -- ACEX
+                                                                        --
+                                                                        --nStatus--
+                                                                        --not used
+conf_done: in std_logic;                                                -- ACEX
+                                                                        -- conf_done
+
+csacx: out std_logic;                                           -- ACEX CS ???
+nws: out std_logic;                                             -- ACEX nWS
+nbsy: in std_logic;                                                     -- ACEX
+                                                                        --
+                                                                        --RDYnBSY--
+                                                                        --not used
+
+resacx: out std_logic_misc-- ACEX reset line
+
+    );
+  attribute pin_number of clk   : signal is \"37\";
+  attribute pin_number of nreset        : signal is \"43\";
+  attribute array_pin_number of a       : signal is (
+    \"5\", \"18\", \"35\", \"34\", \"33\", \"31\", \"30\", \"28\", \"19\",
+    \"21\", \"22\", \"25\", \"27\", \"23\", \"20\", \"15\", \"8\", \"14\"
+    );
+  attribute pin_number of noe   : signal is \"44\";
+  attribute pin_number of nce   : signal is \"12\";
+  attribute pin_number of d0in  : signal is \"2\";
+  attribute pin_number of d0out         : signal is \"13\";
+  attribute pin_number of nconf         : signal is \"6\";
+  attribute pin_number of conf_done     : signal is \"38\";
+  attribute pin_number of csacx         : signal is \"10\";
+  attribute pin_number of nws   : signal is \"11\";
+  attribute pin_number of resacx        : signal is \"42\";
+*/")
+    ))
+    
+
+(test design-unit
+  (with-optima-frob (design-unit)
+    (frob '(:design-unit (:architecture cl-vhdl::rtl cl-vhdl::pld-init
+			  (:<= cl-vhdl::nconf (:waveform (#\1))) (:<= cl-vhdl::nws (:waveform (#\1)))
+			  (:<= cl-vhdl::resacx (:waveform (#\0)))
+			  (:<= cl-vhdl::csacx (:waveform (#\0)))
+			  (:<= cl-vhdl::a (:waveform ((:aggregate (:=> :others #\Z)))))
+			  (:<= cl-vhdl::d0out (:waveform (#\1))) (:<= cl-vhdl::noe (:waveform (#\Z)))
+			  (:<= cl-vhdl::nce (:waveform (#\Z)))))
+	  "architecture rtl of pld_init is
+
+begin
+
+  nconf <= '1';
+  nws <= '1';
+  resacx <= '0';                  -- will be changed to neg. reset (some day)
+  csacx <= '0';
+
+
+  a <= (others => 'Z');
+  d0out <= '1';
+  noe <= 'Z';
+  nce <= 'Z';
+
+end rtl;")
+    (frob '(:design-unit (:library cl-vhdl::ieee)
+	    (:use (:compound cl-vhdl::ieee (:dot cl-vhdl::std-logic-1164) (:dot :all)))
+	    (:use
+	     (:compound cl-vhdl::ieee (:dot cl-vhdl::std-logic-unsigned) (:dot :all)))
+	    (:library cl-vhdl::exemplar)
+	    (:use (:compound cl-vhdl::exemplar (:dot cl-vhdl::exemplar-1164) (:dot :all)))
+	    (:entity cl-vhdl::pld-init))
+	  "
+library ieee ;
+use ieee.std_logic_1164.all ;
+use ieee.std_logic_unsigned.all;
+
+library EXEMPLAR;                                       -- for pin_number
+use EXEMPLAR.EXEMPLAR_1164.ALL;
+
+entity pld_init is
+end pld_init ;")
+    (frob '(:design-unit (:library cl-vhdl::ieee)
+	    (:use (:compound cl-vhdl::ieee (:dot cl-vhdl::std-logic-1164) (:dot :all)))
+	    (:use
+	     (:compound cl-vhdl::ieee (:dot cl-vhdl::std-logic-unsigned) (:dot :all)))
+	    (:library cl-vhdl::exemplar)
+	    (:use (:compound cl-vhdl::exemplar (:dot cl-vhdl::exemplar-1164) (:dot :all)))
+	    (:entity cl-vhdl::pld-init
+	     (:port (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::clk)
+	      (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::nreset)
+	      (:sig-var-con (:compound cl-vhdl::std-logic-vector (:downto 17 0)) nil :out
+			    cl-vhdl::al1)
+	      (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::noe-in)
+	      (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::nce-in)
+	      (:sig-var-con cl-vhdl::std-logic nil :out cl-vhdl::noe)
+	      (:sig-var-con cl-vhdl::std-logic nil :out cl-vhdl::nce)
+	      (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::d0in)
+	      (:sig-var-con cl-vhdl::std-logic nil :out cl-vhdl::d0out)
+	      (:sig-var-con cl-vhdl::std-logic nil :out cl-vhdl::nconf)
+	      (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::nstatus)
+	      (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::conf-done)
+	      (:sig-var-con cl-vhdl::std-logic nil :out cl-vhdl::csacx)
+	      (:sig-var-con cl-vhdl::std-logic nil :out cl-vhdl::nws)
+	      (:sig-var-con cl-vhdl::std-logic nil :in cl-vhdl::nbsy)
+	      (:sig-var-con cl-vhdl::std-logic-misc nil :out cl-vhdl::resacx))
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::clk) :signal "37")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::nreset) :signal "43")
+	     (:attribute-spec cl-vhdl::array-pin-number (cl-vhdl::a) :signal
+	      (:aggregate "5" "18" "35" "34" "33" "31" "30" "28" "19" "21" "22" "25" "27"
+			  "23" "20" "15" "8" "14"))
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::noe) :signal "44")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::nce) :signal "12")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::d0in) :signal "2")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::d0out) :signal "13")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::nconf) :signal "6")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::conf-done) :signal "38")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::csacx) :signal "10")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::nws) :signal "11")
+	     (:attribute-spec cl-vhdl::pin-number (cl-vhdl::resacx) :signal "42")))
+	  "
+library ieee ;
+use ieee.std_logic_1164.all ;
+use ieee.std_logic_unsigned.all;
+
+library EXEMPLAR;                                       -- for pin_number
+use EXEMPLAR.EXEMPLAR_1164.ALL;
+
+entity pld_init is
+  port (
+    clk: in std_logic;
+    nreset: in std_logic;
+    al1: out std_logic_vector(17 downto 0);       -- FLASH adr
+  noe_in: in std_logic;                                                 --
+                                                                        --input
+                                                                        --from
+                                                                        --ACEX--
+                                                                        --not used
+nce_in: in std_logic;                                                   --
+                                                                        --input
+                                                                        --from
+                                                                        --ACEX--
+                                                                        --not used
+noe: out std_logic;                                             -- output to FLASH
+nce: out std_logic;                                             -- output to FLASH
+d0in: in std_logic;                                                     -- D0
+                                                                        -- from FLASH
+d0out: out std_logic;                                           -- reseved
+                                                                -- DATA0 to ACEX
+
+nconf: out std_logic;                                           -- ACEX nConfig
+nstatus: in std_logic;                                                  -- ACEX
+                                                                        --
+                                                                        --nStatus--
+                                                                        --not used
+conf_done: in std_logic;                                                -- ACEX
+                                                                        -- conf_done
+
+csacx: out std_logic;                                           -- ACEX CS ???
+nws: out std_logic;                                             -- ACEX nWS
+nbsy: in std_logic;                                                     -- ACEX
+                                                                        --
+                                                                        --RDYnBSY--
+                                                                        --not used
+
+resacx: out std_logic_misc -- ACEX reset line
+    );
+  attribute pin_number of clk   : signal is \"37\";
+  attribute pin_number of nreset        : signal is \"43\";
+  attribute array_pin_number of a       : signal is (
+    \"5\", \"18\", \"35\", \"34\", \"33\", \"31\", \"30\", \"28\", \"19\",
+    \"21\", \"22\", \"25\", \"27\", \"23\", \"20\", \"15\", \"8\", \"14\"
+    );
+  attribute pin_number of noe   : signal is \"44\";
+  attribute pin_number of nce   : signal is \"12\";
+  attribute pin_number of d0in  : signal is \"2\";
+  attribute pin_number of d0out         : signal is \"13\";
+  attribute pin_number of nconf         : signal is \"6\";
+  attribute pin_number of conf_done     : signal is \"38\";
+  attribute pin_number of csacx         : signal is \"10\";
+  attribute pin_number of nws   : signal is \"11\";
+  attribute pin_number of resacx        : signal is \"42\";
+end pld_init ;")
+    ))
+

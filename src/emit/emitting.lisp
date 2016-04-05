@@ -38,3 +38,13 @@ end if{ $label}; [if label]
 ;; -- we should not mix in dots (or any reader syntax) -- instead relying on "special forms" like CDR
 
 ;; OK, now we need to make emitting language equally flexible
+
+(defun foo ()
+  (let ((x 1))
+    (+ (let ((x 3))
+	 (makunbound 'x)
+	 x)
+       x)))
+
+  
+  
