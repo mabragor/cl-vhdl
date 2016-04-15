@@ -3,7 +3,8 @@
 
 ;;; Design file
 
-(define-ebnf-rule design-file "design-unit { ... }")
+(define-ebnf-rule design-file "design-unit { ... }"
+  `(:design-file ,.res))
 
 ;; List of multiple strings is concatenated -- to make linebreaking more convenient
 ;; Things introduced in VHDL-2008 begin with underline
