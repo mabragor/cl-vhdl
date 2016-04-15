@@ -25,7 +25,8 @@
 							   (:file "parse-interfaces")
 							   (:file "parse-type")
 							   (:file "parse-expressions")
-							   (:file "parse-misc")))))
+							   (:file "parse-misc")))
+				     (:file "parsing-api")))
                (:file "cl-vhdl")
 	       (:static-file "sketches")))
 
