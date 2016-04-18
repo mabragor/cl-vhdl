@@ -2040,3 +2040,16 @@ resacx: out std_logic_misc -- ACEX reset line
 end pld_init ;")
     ))
 
+
+;;; emitting
+
+(test fixwid-token-iter
+  (is (equal " foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo
+ foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo
+ foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo
+ foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo
+ foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo foo"
+	     (with-output-to-string (stream)
+	       (let ((it (cl-vhdl::fixwid-token-emitter stream)))
+		 (iter (for i from 1 to 100)
+		       (cl-vhdl::inext-or-error it "foo")))))))

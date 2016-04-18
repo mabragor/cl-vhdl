@@ -48,3 +48,25 @@ end if{ $label}; [if label]
 
   
   
+;; Let's first write the dumbest emitting ever -- the one that doesn't make indents
+;; and just breaks lines at fixed length. This will already allow to interface with
+;; existing VHDL tools (simulators, analyzers and synthetizers) and switch to a more
+;; interesting task of writing higher-levels of lisp-VHDL.
+
+(defgeneric elt-emit (x))
+
+(defmethod elt-emit ((x string))
+  x)
+
+(defmethod elt-emit ((x symbol))
+  (cl-ppcre:regex-replace-all "-" (string-downcase x) "_"))
+
+(def-launched-iter fixwid-token-emitter (stream &optional (width 80))
+  (let ((cur-width 0))
+    (iter (while t)
+	  (when (> cur-width width)
+	    (format stream "~%")
+	    (setf cur-width 0))
+	  (let ((str (elt-emit (yield :ok))))
+	    (format stream " ~a" str)
+	    (incf cur-width (1+ (length str)))))))
