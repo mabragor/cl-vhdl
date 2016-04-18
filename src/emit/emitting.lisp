@@ -33,6 +33,75 @@ end if{ $label}; [if label]
 ;; 					(maybe (else-alt-label 't (cdr else-expr))))
 ;;   ...)
 
+(define-condition fail-cons-parse (error) ())
+(define-condition no-advance (error) ())
+(defun fail-cons-parse ()
+  (error 'fail-cons-parse))
+(defun no-advance ()
+  (error 'no-advance))
+
+
+(defun codewalk-pattern-at-the-car (pattern)
+  (case (car pattern)
+    (or `(block outer
+	   ,@(mapcar (lambda (x)
+		       `(handler-case ,(codewalk-pattern x t)
+			  (:no-error () (return-from outer)))) ; short-circuit
+		     (cdr pattern))
+	   (fail-cons-parse)))
+    (cap `(progn ,(codewalk-pattern (third pattern) t)
+		 (setf (gethash ',(second pattern) *cap*) *expr*)))
+    (len `(progn (if (not (and (listp *expr*))
+			  (equal ,(second pattern) (length *expr*)))
+		     (fail-cons-parse))
+		 ,(codewalk-pattern (third pattern) t)))
+    (not `(handler-case ,(codewalk-pattern (second pattern) t)
+	    (fail-cons-parse () nil)
+	    (:no-error () (fail-cons-parse))))
+    (t (codewalk-pattern pattern))))
+
+(defun codewalk-list-subpattern (pattern)
+  (if (consp pattern)
+      (case (car pattern)
+	(collect-until ...)
+	(collect-while ...)
+	;; This does advance the cursor when we are traversing the list -- how to do it?
+	(maybe `(handler-case (let ((*expr* (car *expr*)))
+				,(codewalk-pattern (second pattern) t))
+		  (:no-error () (setf *expr* (cdr *expr*)))))
+	(cdr `(let ((*expr* (cdr *expr*)))
+		,(codewalk-pattern (second pattern) t)))
+	(car `(let ((*expr* (car *expr*)))
+		,(codewalk-pattern (second pattern) t)))
+	(t `(handler-case (let ((*expr* (car *expr*)))
+			    ,(codewalk-pattern x t))
+	      (:no-error () (setf *expr* (cdr *expr*))))))
+      `(handler-case (let ((*expr* (car *expr*)))
+		       ,(codewalk-pattern x t))
+	 (:no-error () (setf *expr* (cdr *expr*))))))
+
+
+
+(defun codewalk-pattern (pattern &optional at-the-car)
+  (if (atom pattern)
+      (cond ((keywordp pattern) `(if (not (eq ,pattern *expr*))
+				     (fail-cons-parse)))
+	    ((stringp pattern) `(if (or (not (stringp *expr*))
+					(not (string= ,pattern *expr*)))
+				    (fail-cons-parse)))
+	    ((symbolp pattern) (when (not (eq '_ pattern))
+				 (push pattern *vars*)
+				 `(setf (gethash ',pattern *cap*) *expr*)))
+	    (t (error "Don't know how to codewalk this atomic pattern")))
+      (if at-the-car
+	  (codewalk-pattern-at-the-car pattern)
+	  `(progn ,(mapcar #'codewalk-list-subpattern pattern)))))
+
+
+(defmacro with-smart-destructuring (pattern thing &body body)
+  (once-only (thing)
+    ...))
+
 ;; Looks like I understand now how this destructuring should work
 ;; -- all the "variables" inside body should be grepped beforehand, and be "unbound" outside
 ;; -- we should not mix in dots (or any reader syntax) -- instead relying on "special forms" like CDR
