@@ -30,7 +30,7 @@
 	       (:module "emit"
 			:pathname "src/emit/"
 			:serial t
-			:components ((:static-file "emitting")))
+			:components ((:file "emitting")))
                (:file "cl-vhdl")
 	       (:static-file "sketches")))
 
