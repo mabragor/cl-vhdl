@@ -51,24 +51,19 @@
     (or `(block outer
 	   ,@(mapcar (lambda (x)
 		       `(handler-case ,(codewalk-pattern x t)
-			  (:no-error () (return-from outer *expr*)))) ; short-circuit
+			  (:no-error () (return-from outer expr)))) ; short-circuit
 		     (cdr pattern))
 	   (fail-cons-parse)))
-    (cap `(handler-case ,(codewalk-pattern (third pattern) t)
-	    (no-advance (e) (setf (gethash ',(second pattern) *cap*)
-				  (no-advance-value e))
-			(error e))
-	    (:no-error (x) (setf (gethash ',(second pattern) *cap*) x))))
-    (len `(progn (if (not (and (listp *expr*))
-			  (equal ,(second pattern) (length *expr*)))
+    (len `(progn (if (not (and (listp expr))
+			  (equal ,(second pattern) (length expr)))
 		     (fail-cons-parse))
 		 ,(codewalk-pattern (third pattern) t)
-		 *expr*))
+		 expr))
     (not `(handler-case ,(codewalk-pattern (second pattern) t)
-	    (fail-cons-parse () *expr*)
+	    (fail-cons-parse () expr)
 	    (:no-error () (fail-cons-parse))))
     (t `(progn ,(codewalk-pattern pattern)
-	       *expr*))))
+	       expr))))
 
 (defun codewalk-list-subpattern (pattern)
   (with-gensyms (g!-res)
@@ -76,72 +71,157 @@
 	(case (car pattern)
 	  (collect-until (codewalk-pattern `(not ,(second pattern)) t))
 	  (collect-while `(let ((,g!-res nil))
-			    (loop (push (handler-case ,(codewalk-pattern (second pattern) t)
-					  (fail-cons-parse () (no-advance (nreverse ,g!-res))))
-					,g!-res)
-			       (rebind-expr :next))))
-	  ;; This does advance the cursor when we are traversing the list -- how to do it?
-	  (maybe `(handler-case ,(codewalk-pattern (second pattern) t)
-		    (fail-cons-parse () (no-advance))))
-	  (cdr `(progn (rebind-expr :cdr) ; this is a huge hack with restarts
-		       ,(codewalk-pattern (second pattern) t)
-		       (no-advance *expr*)))
-	  (car `(progn (rebind-expr :car)
-		       ,(codewalk-pattern (second pattern) t)
-		       (no-advance *expr*)))
-	  (t (codewalk-pattern pattern t)))
-	(codewalk-pattern pattern t))))
+			    (iter (while t)
+				  (handler-case (rebind-expr-next)
+				    (fail-cons-parse () (terminate)))
+				  (push (handler-case ,(codewalk-pattern (second pattern) t)
+					  (fail-cons-parse () (rebind-expr-prev) (terminate)))
+					,g!-res))
+			    (nreverse ,g!-res)))
+	  (maybe `(progn (handler-case (rebind-expr-next)
+			   (fail-cons-parse () nil))
+			 (handler-case ,(codewalk-pattern (second pattern) t)
+			   (fail-cons-parse () (rebind-expr-prev)))))
+	  (cdr `(progn (rebind-expr-cdr)
+		       ,(codewalk-pattern (second pattern) t)))
+	  (car `(progn (rebind-expr-car)
+		       ,(codewalk-pattern (second pattern) t)))
+	  (cap `(setf (gethash ',(second pattern) cap)
+		      ,(codewalk-list-subpattern (third pattern))))
+	  (t `(progn (rebind-expr-next)
+		     ,(codewalk-pattern pattern))))
+	`(progn (rebind-expr-next)
+		,(codewalk-pattern pattern)))))
 
 (defvar *vars*)
 
+(defun codewalk-atomic-pattern (pattern)
+  (cond ((keywordp pattern) `(if (not (eq ,pattern expr))
+				 (fail-cons-parse)))
+	((stringp pattern) `(if (or (not (stringp expr))
+				    (not (string= ,pattern expr)))
+				(fail-cons-parse)))
+	((symbolp pattern) (when (not (eq '_ pattern))
+			     (setf (gethash pattern *vars*) t)
+			     `(setf (gethash ',pattern cap) expr)))
+	(t (error "Don't know how to codewalk this atomic pattern"))))
+
+(defun codewalk-cons-pattern (pattern)
+  (with-gensyms (g!-expr-iter)
+    `(progn (when (not (consp expr))
+	      (fail-cons-parse))
+	    (let ((,g!-expr-iter (mk-expr-iter expr)))
+	      (macrolet ((rebind-expr-car () `(setf expr (funcall ,',g!-expr-iter :car)))
+			 (rebind-expr-cdr () `(setf expr (funcall ,',g!-expr-iter :cdr)))
+			 (rebind-expr-next () `(setf expr (funcall ,',g!-expr-iter :next)))
+			 (rebind-expr-prev () `(setf expr (funcall ,',g!-expr-iter :prev))))
+		,@(mapcar (lambda (x)
+			    `(let (expr)
+			       ,(codewalk-list-subpattern x)))
+			  pattern)
+		,@(if (or (atom (car (last pattern)))
+			  (not (eq 'cdr (car (car (last pattern))))))
+		      `((if (not (end-of-iter-p ,g!-expr-iter))
+			    (fail-cons-parse)))))
+	      expr))))
+
+(defun end-of-iter-p (iter)
+  (funcall iter :end-p))
+
+;; ,@(mapcar (lambda (x)
+;; 		  `(handler-bind ((rebind-error
+;; 				   (lambda (c)
+;; 				     (with-slots (opcode) c
+;; 				       (ecase opcode
+;; 					 (:car (setf ,g!-cur-expr (car (or ,g!-cur-expr
+;; 									   ,g!-stash-expr))
+;; 						     expr ,g!-cur-expr))
+;; 					 (:cdr (setf ,g!-cur-expr (cdr (or ,g!-cur-expr
+;; 									   ,g!-stash-expr))
+;; 						     expr ,g!-cur-expr))
+;; 					 (:next (setf ,g!-cur-expr (if ,g!-cur-expr
+;; 								       (cdr ,g!-cur-expr)
+;; 								       ,g!-stash-expr)
+;; 						      expr (car ,g!-cur-expr)))))
+;; 				     (invoke-restart 'continue c))))
+;; 		     ,(codewalk-list-subpattern x)))
+
+
 (defun codewalk-pattern (pattern &optional at-the-car)
   (if (atom pattern)
-      (cond ((keywordp pattern) `(if (not (eq ,pattern *expr*))
-				     (fail-cons-parse)))
-	    ((stringp pattern) `(if (or (not (stringp *expr*))
-					(not (string= ,pattern *expr*)))
-				    (fail-cons-parse)))
-	    ((symbolp pattern) (when (not (eq '_ pattern))
-				 (setf (gethash pattern *vars*) t)
-				 `(setf (gethash ',pattern *cap*) *expr*)))
-	    (t (error "Don't know how to codewalk this atomic pattern")))
+      (codewalk-atomic-pattern pattern)
       (if at-the-car
 	  (codewalk-pattern-at-the-car pattern)
-	  (with-gensyms (g!-stash-expr g!-cur-expr)
-	    `(let ((,g!-stash-expr *expr*)
-		   (,g!-cur-expr *expr*))
-	       ,@(mapcar (lambda (x)
-			   `(let ((*expr* (car ,g!-cur-expr)))
-			      (handler-bind ((rebind-error
-					      (lambda (c)
-						(with-slots (opcode) c
-						  (ecase opcode
-						    (:car nil) ; do nothing here -- already at CAR
-						    (:cdr (setf *expr* (cdr ,g!-cur-expr)))
-						    (:next (setf ,g!-cur-expr (cdr ,g!-cur-expr)
-								 *expr* (car ,g!-cur-expr)))))
-						(invoke-restart 'continue c))))
-				,(codewalk-list-subpattern x))
-			      (setf ,g!-cur-expr (cdr ,g!-cur-expr))))
-			 pattern)
-	       (if ,g!-cur-expr
-		   (fail-cons-parse))
-	       ,g!-stash-expr)))))
+	  (codewalk-cons-pattern pattern))))
 
 (defun %codewalk-pattern (pattern)
   (let ((*vars* (make-hash-table :test #'eq)))
     (values (codewalk-pattern pattern t) *vars*)))
 
+(defun mk-expr-iter (thing)
+  (let ((inner-thing thing)
+	prev-cur-thing
+	cur-thing
+	(index -1))
+    (lambda (cmd)
+      ;; (format t "inner : ~a, prev-cur-thing : ~a, cur-thing : ~a, index : ~a~%"
+      ;; 	      inner-thing prev-cur-thing cur-thing index)
+      (ecase cmd
+	(:next (if (equal -1 index)
+		   (if (not (consp inner-thing))
+		       (fail-cons-parse))
+		   (if (or (not (consp cur-thing))
+			   (not (consp (cdr cur-thing))))
+		       (fail-cons-parse)))
+	       (if (equal -1 index)
+		   (setf index 0
+			 cur-thing inner-thing)
+		   (setf index (1+ index)
+			 prev-cur-thing cur-thing
+			 cur-thing (cdr cur-thing)))
+	       (car cur-thing))
+	(:prev (if (equal -1 index)
+		   (error "Something went horribly wrong -- requesting prev when index -1"))
+	       (if (eq :prev-used prev-cur-thing)
+		   (error "Something went horribly wrong -- requesting two prevs in a row"))
+	       (setf index (1- index)
+		     cur-thing prev-cur-thing
+		     prev-cur-thing :prev-used)
+	       (car cur-thing))
+	(:car (if (equal -1 index)
+		  (when (or (not (consp inner-thing))
+			    (cdr inner-thing))
+		    (fail-cons-parse))
+		  (when (or (not (consp cur-thing))
+			    (cdr cur-thing))
+		    (fail-cons-parse)))
+	      (if (equal -1 index)
+		  (setf index 0
+			cur-thing (car inner-thing))
+		  (setf index (1+ index)
+			prev-cur-thing cur-thing
+			cur-thing (car cur-thing))))
+	(:cdr (if (equal -1 index)
+		  (setf index 0
+			cur-thing (cdr inner-thing))
+		  (setf index (1+ index)
+			prev-cur-thing cur-thing
+			cur-thing (cdr cur-thing))))
+	(:end-p (if (equal -1 index)
+		    (not (cdr inner-thing))
+		    (not (cdr cur-thing))))))))
+
+		  
+		     
 
 (defmacro with-smart-destructuring (pattern thing &body body)
   (once-only (thing)
     (multiple-value-bind (code vars) (%codewalk-pattern pattern)
-      `(let ((*expr* ,thing)
-	     (*cap* (make-hash-table :test #'eq)))
+      `(let ((cap (make-hash-table :test #'eq))
+	     (expr ,thing))
 	 ,code
 	 (symbol-macrolet ,(iter (for (key nil) in-hashtable vars)
-				 (collect `(,key (gethash ',key *cap*))))
-
+				 (collect `(,key (gethash ',key cap))))
 	   ,@body)))))
 	 
 ;; Looks like I understand now how this destructuring should work
