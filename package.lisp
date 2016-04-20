@@ -7,6 +7,5 @@
 	   #:parse-vhdl-file
 	   #:s-exp<-ebnf
 	   #:* #:|| #:? #:new
-	   #:with-smart-destructuring
 	   ))
 

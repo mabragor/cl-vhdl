@@ -2055,13 +2055,3 @@ end pld_init ;")
 		       (cl-vhdl::inext-or-error it "foo")))))))
 
 
-
-;;; tests for cons pattern matching
-
-(test simple-pattern
-  (is (equal '(3 2 1) (with-smart-destructuring (a b c) '(1 2 3) (list c b a))))
-  (is (equal '(1 2) (with-smart-destructuring (a (cdr b)) '(1 . 2) (list a b))))
-  )
-  
-      
-      
