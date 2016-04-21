@@ -1,6 +1,8 @@
 
 (in-package #:cl-vhdl)
 
+(cl-interpol:enable-interpol-syntax)
+
 ;; OK, let's try to emit *some* VHDL from s-exp and see how far will it go...
 ;; The pattern for if (cond) would look something like
 
@@ -71,3 +73,38 @@
 	  (let ((str (elt-emit (yield :ok))))
 	    (format stream " ~a" str)
 	    (incf cur-width (1+ (length str)))))))
+
+;; Let's start from the beginning and serialize some elementary things
+
+(define-condition emit-error (error) ())
+(defun fail-emit ()
+  (error 'emit-error))
+
+(defparameter *emit-rules* (make-hash-table :test #'eq))
+
+(defmacro def-emit-rule (name pattern &body body)
+  `(setf (gethash ',name *emit-rules*)
+	 (lambda (whole) ; yes, we intentionally leak this variable into the BODY
+	   (let ((it (handler-case (with-match ,pattern whole
+				     ,@body)
+		       (fail-match () (fail-emit)))))
+	     (if (not (stringp it))
+		 (error "We should emit strings, but rule ~a returned something else..." ',name)
+		 it)))))
+
+(defmacro try-emit (thing &rest alternatives)
+  (once-only (thing)
+    (with-gensyms (g!-outer)
+      `(block ,g!-outer
+	 ,@(mapcar (lambda (x)
+		     `(handler-case (funcall (gethash ',x *emit-rules*) ,thing)
+			(emit-error () nil)
+			(:no-error (x) (return-from ,g!-outer x))))
+		   alternatives)
+	 (fail-emit)))))
+
+(def-emit-rule character-literal x_characterp #?"'$(x)'")
+
+(def-emit-rule bit-string-literal (:bin it_stringp) #?"B\"$(it)\"")
+
+
