@@ -7,5 +7,6 @@
 	   #:parse-vhdl-file
 	   #:s-exp<-ebnf
 	   #:* #:|| #:? #:new
+	   #:try-emit
 	   ))
 

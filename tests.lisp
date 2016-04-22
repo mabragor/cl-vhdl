@@ -2055,3 +2055,19 @@ end pld_init ;")
 		       (cl-vhdl::inext-or-error it "foo")))))))
 
 
+(test emit-literals
+  (is (equal "'a'" (try-emit #\a cl-vhdl::character-literal)))
+  (is (equal "B\"000\"" (try-emit '(:bin "000") cl-vhdl::bit-string-literal)))
+  (is (equal "100500" (try-emit 100500 cl-vhdl::number-literal)))
+  (is (equal "foo_bar" (try-emit 'foo-bar cl-vhdl::symbol-literal)))
+  (is (equal "foo_bar" (try-emit 'foo-bar cl-vhdl::identifier)))
+  (is (equal "1 deco_meter" (try-emit '(1 deco-meter) cl-vhdl::physical-literal)))
+  (is (equal "\"roger  \"\"  wilco\"" (try-emit "roger  \"  wilco" cl-vhdl::string-literal)))
+  ;; now with vague 'literal' specification
+  (is (equal "'a'" (try-emit #\a cl-vhdl::literal)))
+  (is (equal "B\"000\"" (try-emit '(:bin "000") cl-vhdl::literal)))
+  (is (equal "100500" (try-emit 100500 cl-vhdl::literal)))
+  (is (equal "foo_bar" (try-emit 'foo-bar cl-vhdl::literal)))
+  (is (equal "1 deco_meter" (try-emit '(1 deco-meter) cl-vhdl::literal)))
+  (is (equal "\"roger  \"\"  wilco\"" (try-emit "roger  \"  wilco" cl-vhdl::literal)))
+  )

@@ -107,4 +107,20 @@
 
 (def-emit-rule bit-string-literal (:bin it_stringp) #?"B\"$(it)\"")
 
+(def-emit-rule number-literal x_numberp (format nil "~s" x))
 
+(def-emit-rule symbol-literal sym_symbolp
+  (cl-ppcre:regex-replace-all "-" (string-downcase sym) "_"))
+
+(def-emit-rule physical-literal (n_numberp unit_symbolp)
+  ;; TODO : somehow remove duplication of guards
+  #?"$((try-emit n number-literal)) $((try-emit unit symbol-literal))")
+
+(def-emit-rule string-literal x_stringp
+  (format nil "\"~{~a~^\"\"~}\"" (cl-ppcre:split "\"" x)))
+
+(def-emit-rule identifier x (try-emit x symbol-literal))
+
+(def-emit-rule literal x
+  (try-emit x identifier character-literal number-literal string-literal physical-literal bit-string-literal))
+	    
