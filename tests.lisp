@@ -327,7 +327,7 @@
 
 (test subtype-declaration
   (with-optima-frob (subtype-declaration)
-    (frob (list :subtype 'cl-vhdl::small-int 'cl-vhdl::integer (list :constraint (list :range _ _)))
+    (frob (list :subtype 'cl-vhdl::small-int 'cl-vhdl::integer (list :constraint (list :to _ _)))
 	  "subtype small_int is integer range -128 to 127;")))
 
 (test qualified-expression
@@ -518,8 +518,8 @@
 	  "array (0 to 31) of bit")
     (frob '(:array cl-vhdl::natural (:to cl-vhdl::idle cl-vhdl::error))
 	  "array (idle to error) of natural")
-    (frob '(:array cl-vhdl::natural (cl-vhdl::controller-state (:constraint (:range cl-vhdl::idle
-										    cl-vhdl::error))))
+    (frob '(:array cl-vhdl::natural (cl-vhdl::controller-state (:constraint (:to cl-vhdl::idle
+										 cl-vhdl::error))))
 	  "array (controller_state range idle to error) of natural")
     (frob '(:array cl-vhdl::real cl-vhdl::coeff-ram-address)
 	  "array (coeff_ram_address) of real")
@@ -609,9 +609,9 @@
 
 (test record
   (with-optima-frob (type-declaration)
-    (frob '(:type cl-vhdl::time-stamp (:record ((cl-vhdl::integer (:constraint (:range 0 59))) cl-vhdl::seconds)
-				       ((cl-vhdl::integer (:constraint (:range 0 59))) cl-vhdl::minutes)
-				       ((cl-vhdl::integer (:constraint (:range 0 23))) cl-vhdl::hours)))
+    (frob '(:type cl-vhdl::time-stamp (:record ((cl-vhdl::integer (:constraint (:to 0 59))) cl-vhdl::seconds)
+				       ((cl-vhdl::integer (:constraint (:to 0 59))) cl-vhdl::minutes)
+				       ((cl-vhdl::integer (:constraint (:to 0 23))) cl-vhdl::hours)))
 	  "type time_stamp is record
                seconds : integer range 0 to 59;
                minutes : integer range 0 to 59;

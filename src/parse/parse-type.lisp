@@ -8,9 +8,11 @@
 
 (define-ebnf-rule range-definition ("RANGE ( RANGE-attribute-name"
 				    "        | simple-expression ( TO | DOWNTO ) simple-expression )")
-  (if (< 2 (length 2nd))
-       `(:range ,(car 2nd) ,(caddr 2nd))
-       res))
+  (if (and (eq :compound (car 2nd))
+	   (attribute-name-p 2nd))
+      `(:range ,2nd)
+      `(,(cadr 2nd) ,(car 2nd) ,(caddr 2nd))))
+
 
 (define-ebnf-rule int-or-float-type-definition "range-definition"
   (if (< 2 (length res))

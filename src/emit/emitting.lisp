@@ -89,7 +89,7 @@
 				     ,@body)
 		       (fail-match () (fail-emit)))))
 	     (if (not (stringp it))
-		 (error "We should emit strings, but rule ~a returned something else..." ',name)
+		 (error "We should emit strings, but rule ~a returned something else : ~a" ',name it)
 		 it)))))
 
 (defmacro try-emit (thing &rest alternatives)
@@ -101,6 +101,18 @@
 			(emit-error () nil)
 			(:no-error (x) (return-from ,g!-outer x))))
 		   alternatives)
+	 (fail-emit)))))
+
+(defmacro ecase-emit (thing &rest clauses)
+  "If clause succeeds, IT is bound inside clause to result of emission."
+  (once-only (thing)
+    (with-gensyms (g!-outer)
+      `(block ,g!-outer
+	 ,@(mapcar (lambda (x)
+		     `(handler-case (funcall (gethash ',(car x) *emit-rules*) ,thing)
+			(emit-error () nil)
+			(:no-error (it) (return-from ,g!-outer (progn ,@(cdr x))))))
+		   clauses)
 	 (fail-emit)))))
 
 (def-emit-rule character-literal x_characterp #?"'$(x)'")
@@ -123,4 +135,102 @@
 
 (def-emit-rule literal x
   (try-emit x identifier character-literal number-literal string-literal physical-literal bit-string-literal))
+
+;; I guess, there's no other way than first learn to emit most elementary constructs (done),
+;; then more and more compound ones, building to general expressions
+;; only then I can address control flow constructs -- otherwise I lose the power of interactive testing.
+;; So, let's slowly move along this path...
+
+;;; primary expressions
+;; (def-emit-rule primary x
+;;   (try-emit x
+;; 	    literal qualified-expression
+;; 	    ...))
+
+(def-emit-rule qualified-expression (:qualified thing type)
+  (let ((it (ecase-emit thing (aggregate it) (expression #?"($(it))"))))
+    #?"$((try-emit type type))'$(it)"))
+
+(defun emit-aggregate-elt (thing)
+  (ecase-match thing ((:=> choices expr) #?"$((try-emit choices choices)) => $((try-emit expr expression))")
+	       (expr (try-emit expr expression))))
+
+(def-emit-rule aggregate (:aggregate (cdr things))
+  (format nil "~{~a~^, ~}" (mapcar #'emit-aggregate-elt things)))
+
+(defun emit-elt-choice (x)
+  ;; TODO : keywords are special rules that match this precise keyword
+  (try-emit x discrete-range identifier simple-expression :others))
 	    
+
+(def-emit-rule choices x
+  (ecase-match x
+	       ((:|| (cdr alts)) (format nil "~{~a~^|| ~}" (mapcar #'emit-elt-choice alts)))
+	       (x (emit-elt-choice x))))
+
+(def-emit-rule discrete-range x
+  (try-emit x simple-discrete-range attribute-range subtype-range))
+
+(def-emit-rule simple-discrete-range ((cap dir (or :to :downto)) x y)
+  #?"$((try-emit x simple-expression)) $(dir) $((try-emit y simple-expression))")
+
+(def-emit-rule attribute-range x_attribute-name-p
+  (try-emit x name))
+
+(def-emit-rule attribute-name x_attribute-name-p
+  (try-emit x name))
+
+(def-emit-rule subtype-range x
+  (try-emit x subtype-indication))
+
+(defun sym-not-kwd-p (x)
+  (and (symbolp x)
+       (not (keywordp x))))
+
+(defun name-p (x)
+  (or (sym-not-kwd-p x) ; identifier
+      (characterp x) ; character literal
+      (stringp x) ; operator-symbol
+      (match-p (:compound (cdr _)) x) ; shallow testing of the correct compound name structure
+      ))
+	       
+(def-emit-rule type-mark x_name-p
+  (try-emit x name))
+
+(def-emit-rule subtype-indication x
+  (try-emit x type-mark compound-subtype-indication))
+
+(def-emit-rule compound-subtype-indication (type-mark_name-p  (cap res (maybe (:resolution _)))
+							      (cap con (maybe (:constraint _))))
+  (when (and (not res) (not con))
+    (fail-emit))
+  (format nil "~a ~a ~a"
+	  (if res (try-emit res resolution-indication) "")
+	  (try-emit type-mark type-mark)
+	  (if con (try-emit res constraint) "")))
+
+(def-emit-rule resolution-indication x
+  (try-emit x name sub-array-resolution sub-record-resolution))
+
+(def-emit-rule sub-array-resolution (:sub x)
+  #?"($((try-emit x resolution-indication)))")
+
+(def-emit-rule sub-record-resolution (:fields (cdr lst))
+  (format nil "(~{~a~^, ~})" (mapcar (lambda (x)
+				       (with-match (1st 2nd) x
+					 #?"$((try-emit 1st identifier)) $((try-emit 2nd resolution-indication))"))
+				     lst)))
+
+(def-emit-rule constraint x
+  (try-emit x range-definition array-constraint record-constraint))
+
+;; TODO : do record-constraint and array-constraint
+
+(def-emit-rule range-definition x
+  (ecase-match x (((cap dir (or :to :downto)) x y)
+		  (format t "I'm here~%")
+		  (format nil "range (~a ~a ~a)"
+			  (try-emit x simple-expression)
+			  (try-emit dir symbol-literal)
+			  (try-emit y simple-expression)))
+	       ((:range x_attribute-name-p) #?"range $((try-emit x name))")))

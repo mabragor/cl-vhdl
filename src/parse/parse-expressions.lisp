@@ -196,17 +196,27 @@
   (let ((toplevel :t))
     `(:paren ,@(progm #\( (v association-list :parameter) #\)))))
 
+(defun selected-name-p (x)
+  (eq :dot (caar (last x))))
+
 (define-ebnf-rule selected-name "compound-name"
-  (if (not (eq :dot (caar (last res))))
+  (if (not (selected-name-p res))
       (fail-parse "Not a selected name")
       res))
+
+(defun attribute-name-p (x)
+  (eq :attribute (caar (last x))))
+
 (define-ebnf-rule attribute-name "compound-name"
-  (if (not (eq :attribute (caar (last res))))
+  (if (not (attribute-name-p res))
       (fail-parse "Not an attribute name")
       res))
 
+(defun function-call-p (x)
+  (eq :paren (caar (last x))))
+
 (define-ebnf-rule function-call "compound-name"
-  (if (not (eq :paren (caar (last res))))
+  (if (not (function-call-p res))
       (fail-parse "Not a function call")
       res))
 
