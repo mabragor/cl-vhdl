@@ -97,9 +97,13 @@
     (with-gensyms (g!-outer)
       `(block ,g!-outer
 	 ,@(mapcar (lambda (x)
-		     `(handler-case (funcall (gethash ',x *emit-rules*) ,thing)
-			(emit-error () nil)
-			(:no-error (x) (return-from ,g!-outer x))))
+		     (with-gensyms (g!-fun)
+		       `(handler-case (let ((,g!-fun (gethash ',x *emit-rules*)))
+					(if (not ,g!-fun)
+					    (error "Emission function: ~a is not defined" ',x)
+					    (funcall ,g!-fun ,thing)))
+			  (emit-error () nil)
+			  (:no-error (x) (return-from ,g!-outer x)))))
 		   alternatives)
 	 (fail-emit)))))
 
@@ -142,14 +146,64 @@
 ;; So, let's slowly move along this path...
 
 ;;; primary expressions
-;; (def-emit-rule primary x
-;;   (try-emit x
-;; 	    literal qualified-expression
-;; 	    ...))
+(def-emit-rule primary x
+  (try-emit x
+	    literal qualified-expression
+	    name aggregate function-call
+	    new-primary typemark-primary
+	    parenthesized-expression
+	    ))
+
+(def-emit-rule new-primary (:new x)
+  #?"new $((try-emit x subtype-indication qualified-expression))")
+
+(def-emit-rule parenthesized-expression x
+  ;; if we are at this stage of emitting expression *necessarily* must be bracketed
+  #?"($((try-emit x expression)))")
+
+(def-emit-rule typemark-primary x
+  ;; TODO : actually implement this -- which I don't know how to do now
+  (fail-emit))
+
+(def-emit-rule unary-op ((cap op (or :abs :not :and :nand :or :nor :xor :xnor)) x)
+  #?"$((try-emit op symbol-literal)) $((try-emit x primary))")
+
+(def-emit-rule exponentiation (:** x y)
+  #?"$((try-emit x primary)) ** $((try-emit y primary))")
+
+(def-emit-rule factor x
+  (try-emit x exponentiation unary-op primary))
+
+(def-emit-rule term x
+  (try-emit x real-term factor))
+
+(def-emit-rule real-term ((cap op (or :* :/ :mod :rem)) (cdr lst))
+  (format nil #?"~{~a~^ $((try-emit op symbol-literal)) ~}"
+	  (mapcar (lambda (x)
+		    (try-emit x factor))
+		  lst)))
 
 (def-emit-rule qualified-expression (:qualified thing type)
   (let ((it (ecase-emit thing (aggregate it) (expression #?"($(it))"))))
     #?"$((try-emit type type))'$(it)"))
+
+(def-emit-rule simple-expression x
+  (try-emit x real-simple-expression term))
+
+(def-emit-rule real-simple-expression ((cap op (or :+ :- :&)) (cdr lst))
+  (if (equal 1 (length lst))
+      #?"$((try-emit op symbol-literal)) $((try-emit (car lst) term))"
+      (ecase-match (car lst)
+		   (((cap sub-op (or :+ :-)) x)
+		    (format nil #?"$((try-emit sub-op symbol-literal)) ~{~a~^ $((try-emit op symbol-literal)) ~}"
+			    (mapcar (lambda (x)
+				      (try-emit x term))
+				    (cons x (cdr lst)))))
+		   (_ (format nil #?"~{~a~^ $((try-emit op symbol-literal)) ~}"
+			      (mapcar (lambda (x)
+					(try-emit x term))
+				      lst))))))
+
 
 (defun emit-aggregate-elt (thing)
   (ecase-match thing ((:=> choices expr) #?"$((try-emit choices choices)) => $((try-emit expr expression))")
