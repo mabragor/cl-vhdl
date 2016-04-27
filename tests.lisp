@@ -2071,3 +2071,24 @@ end pld_init ;")
   (is (equal "1 deco_meter" (try-emit '(1 deco-meter) cl-vhdl::literal)))
   (is (equal "\"roger  \"\"  wilco\"" (try-emit "roger  \"  wilco" cl-vhdl::literal)))
   )
+
+(defmacro with-emit-frob ((what) &body body)
+  `(macrolet ((frob (x y) `(let ((expr (try-emit ,y ,',what))
+				 (theor ,x))
+			     (is (equal theor expr)))))
+     ,@body))
+
+(test emit-name
+  (with-emit-frob (cl-vhdl::name)
+    (frob "asdf" 'asdf)
+    (frob "foo.bar" '(:compound foo (:dot bar)))
+    ))
+    
+(test emit-expression
+  (with-emit-frob (cl-vhdl::simple-expression)
+    (frob "1" 1)
+    (frob "1 * 2" '(:* 1 2))
+    ))
+
+    
+

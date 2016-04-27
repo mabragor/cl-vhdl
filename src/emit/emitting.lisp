@@ -140,6 +140,10 @@
 (def-emit-rule literal x
   (try-emit x identifier character-literal number-literal string-literal physical-literal bit-string-literal))
 
+(def-emit-rule label x
+  (try-emit x identifier))
+
+
 ;; I guess, there's no other way than first learn to emit most elementary constructs (done),
 ;; then more and more compound ones, building to general expressions
 ;; only then I can address control flow constructs -- otherwise I lose the power of interactive testing.
@@ -288,3 +292,102 @@
 			  (try-emit dir symbol-literal)
 			  (try-emit y simple-expression)))
 	       ((:range x_attribute-name-p) #?"range $((try-emit x name))")))
+
+(def-emit-rule name x
+  (try-emit x compound-name atomic-name external-name))
+
+(def-emit-rule operator-symbol x_string
+  (try-emit x string-literal))
+
+(def-emit-rule atomic-name x
+  (try-emit x identifier operator-symbol character-literal))
+
+(def-emit-rule external-name ((cap op (or :constant :signal :variable)) subtype pathname)
+  (format nil "<< ~a ~a : ~a >>"
+	  (try-emit op symbol-literal)
+	  (try-emit pathname external-pathname)
+	  (try-emit subtype subtype-indication)))
+
+(def-emit-rule external-pathname x
+  (try-emit x absolute-pathname relative-pathname package-pathname))
+
+(def-emit-rule absolute-pathname (:abs-path (cdr path))
+  (format nil ". ~{~a~^ . ~} . ~a"
+	  (mapcar (lambda (x)
+		    (try-emit x pathname-element))
+		  (butlast path))
+	  (try-emit (car (last path)) identifier)))
+
+(def-emit-rule relative-pathname (:rel-path (cdr path))
+  (format nil "^. ~{~a~^ . ~} . ~a"
+	  (mapcar (lambda (x)
+		    (try-emit x pathname-element))
+		  (butlast path))
+	  (try-emit (car (last path)) identifier)))
+
+(def-emit-rule package-pathname (:package-path (cdr path))
+  (format nil "@ ~a . ~{~a~^ . ~} . ~a"
+	  (try-emit (car path) identifier)
+	  (mapcar (lambda (x)
+		    (try-emit x identifier))
+		  (butlast (cdr path)))
+	  (try-emit (car (last (cdr path))) identifier)))
+
+(def-emit-rule pathname-element x
+  ;; I removed all identically looking options -- all are symbol-literals
+  (try-emit x identifier generate-pathname-element))
+
+(def-emit-rule generate-pathname-element (:generate label (cap expr (maybe x)))
+  (if expr
+      #?"$((try-emit label label)) ($((try-emit expr expression)))"
+      #?"$((try-emit label label))"))
+
+(def-emit-rule compound-name (:compound atomic (cdr tails))
+  (format nil "~a~{~a~}" (try-emit atomic atomic-name)
+	  (mapcar (lambda (x)
+		    (try-emit x name-tail))
+		  tails)))
+
+(def-emit-rule name-tail x (try-emit x parenthesized-compound-tail discrete-range-tail selected-tail
+				     attribute-tail funcall-tail))
+
+(def-emit-rule parenthesized-compound-tail (:paren (cdr exprs))
+  (format nil "(~{~a~^, ~})" (mapcar (lambda (x)
+				       (try-emit x expression))
+				     exprs)))
+
+(def-emit-rule discrete-range-tail x
+  #?"($((try-emit x discrete-range)))")
+
+(def-emit-rule selected-tail (:dot x)
+  #?".$((try-emit x atomic-name))")
+
+(def-emit-rule attribute-tail (:attribute id (cap sig (maybe (:signature _))) (cap expr (maybe _)))
+  (format nil "~a'~a~a"
+	  (if sig
+	      (try-emit (cadr sig) signature)
+	      "")
+	  id
+	  (if expr
+	      #?"($((try-emit expr expression)))"
+	      "")))
+
+(def-emit-rule funcall-tail (:paren (cdr lst))
+  #?"($((try-emit lst association-list)))")
+
+(def-emit-rule association-list lst
+  (format nil "~{~a~^, ~}" (mapcar (lambda (x)
+				     (try-emit x association-elt))
+				   lst)))
+
+(def-emit-rule association-elt x
+  (ecase-match x ((:=> x y) #?"$((try-emit x formal-part)) => $((try-emit y actual-part))")
+	       (_ #?"$((try-emit x actual-part))")))
+
+(def-emit-rule formal-part x
+  ;; TODO : actually implement this
+  (fail-emit))
+
+(def-emit-rule actual-part x
+  ;; TODO : actually implement this
+  (fail-emit))

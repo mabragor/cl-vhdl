@@ -197,7 +197,9 @@
     `(:paren ,@(progm #\( (v association-list :parameter) #\)))))
 
 (defun selected-name-p (x)
-  (eq :dot (caar (last x))))
+  (and (listp x)
+       (consp (car (last x)))
+       (eq :dot (caar (last x)))))
 
 (define-ebnf-rule selected-name "compound-name"
   (if (not (selected-name-p res))
@@ -205,7 +207,9 @@
       res))
 
 (defun attribute-name-p (x)
-  (eq :attribute (caar (last x))))
+  (and (listp x)
+       (consp (car (last x)))
+       (eq :attribute (caar (last x)))))
 
 (define-ebnf-rule attribute-name "compound-name"
   (if (not (attribute-name-p res))
@@ -213,7 +217,9 @@
       res))
 
 (defun function-call-p (x)
-  (eq :paren (caar (last x))))
+  (and (listp x)
+       (consp (car (last x)))
+       (eq :paren (caar (last x)))))
 
 (define-ebnf-rule function-call "compound-name"
   (if (not (function-call-p res))
