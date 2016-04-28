@@ -2,7 +2,7 @@
 
 (defpackage #:cl-vhdl
   (:use #:cl #:esrap-liquid #:iterate #:cl-itertools #:cl-matchstick)
-  (:shadowing-import-from #:alexandria #:with-gensyms #:once-only)
+  (:shadowing-import-from #:alexandria #:with-gensyms #:once-only #:named-lambda)
   (:export #:vhdl-parse #:*vhdl-version* #:*vhdl-strict*
 	   #:parse-vhdl-file
 	   #:s-exp<-ebnf

@@ -2083,11 +2083,17 @@ end pld_init ;")
     (frob "asdf" 'asdf)
     (frob "foo.bar" '(:compound foo (:dot bar)))
     ))
-    
+
+(test emit-expression-misc
+  (is (equal '("+" "1" "2") (mapcar (lambda (x) (try-emit x cl-vhdl::term)) '(:+ 1 2))))
+  )
+
 (test emit-expression
   (with-emit-frob (cl-vhdl::simple-expression)
     (frob "1" 1)
     (frob "1 * 2" '(:* 1 2))
+    (frob "+ 1" '(:+ 1))
+    (frob "(1 + 2) * 3" '(:* (:+ 1 2) 3))
     ))
 
     

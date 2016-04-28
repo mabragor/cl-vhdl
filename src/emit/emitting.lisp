@@ -84,7 +84,7 @@
 
 (defmacro def-emit-rule (name pattern &body body)
   `(setf (gethash ',name *emit-rules*)
-	 (lambda (whole) ; yes, we intentionally leak this variable into the BODY
+	 (named-lambda ,name (whole) ; yes, we intentionally leak this variable into the BODY
 	   (let ((it (handler-case (with-match ,pattern whole
 				     ,@body)
 		       (fail-match () (fail-emit)))))
@@ -195,19 +195,22 @@
   (try-emit x real-simple-expression term))
 
 (def-emit-rule real-simple-expression ((cap op (or :+ :- :&)) (cdr lst))
+  ;; (format t "I'm there1 ~a~%" lst)
   (if (equal 1 (length lst))
       #?"$((try-emit op symbol-literal)) $((try-emit (car lst) term))"
       (ecase-match (car lst)
 		   (((cap sub-op (or :+ :-)) x)
+		    ;; (format t "I'm here~%")
 		    (format nil #?"$((try-emit sub-op symbol-literal)) ~{~a~^ $((try-emit op symbol-literal)) ~}"
 			    (mapcar (lambda (x)
 				      (try-emit x term))
 				    (cons x (cdr lst)))))
-		   (_ (format nil #?"~{~a~^ $((try-emit op symbol-literal)) ~}"
-			      (mapcar (lambda (x)
-					(try-emit x term))
-				      lst))))))
-
+		   (_
+		    ;; (format t "I'm there ~a~%" lst)
+		    (format nil #?"~{~a~^ $((try-emit op symbol-literal)) ~}"
+			    (mapcar (lambda (x)
+				      (try-emit x term))
+				    lst))))))
 
 (defun emit-aggregate-elt (thing)
   (ecase-match thing ((:=> choices expr) #?"$((try-emit choices choices)) => $((try-emit expr expression))")
@@ -296,7 +299,7 @@
 (def-emit-rule name x
   (try-emit x compound-name atomic-name external-name))
 
-(def-emit-rule operator-symbol x_string
+(def-emit-rule operator-symbol x_stringp
   (try-emit x string-literal))
 
 (def-emit-rule atomic-name x
@@ -391,3 +394,10 @@
 (def-emit-rule actual-part x
   ;; TODO : actually implement this
   (fail-emit))
+
+(def-emit-rule function-call x_function-call-p
+  (try-emit x compound-name))
+
+(def-emit-rule expression x
+  ;; TODO : actually write more sophisticated expressions
+  (try-emit x simple-expression))
