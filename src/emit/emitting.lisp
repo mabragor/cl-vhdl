@@ -398,6 +398,43 @@
 (def-emit-rule function-call x_function-call-p
   (try-emit x compound-name))
 
-(def-emit-rule expression x
-  ;; TODO : actually write more sophisticated expressions
-  (try-emit x simple-expression))
+;; OK, let's write up to most general expressions
+
+(defmacro def-funforward-rule (name forward-name pattern &body body)
+  "The rule that sometimes implements 'function forward' -- sends responsibility to another rule"
+  (with-gensyms (g!-real-name)
+    `(progn (def-emit-rule ,g!-real-name ,pattern ,@body)
+	    (def-emit-rule ,name _
+	      (try-emit whole ,g!-real-name ,forward-name)))))
+
+(defmacro def-op-expr-rule (name sub-name &rest ops)
+  `(def-funforward-rule ,name ,sub-name ((cap op (or ,@ops)) x y)
+     (format nil "~a ~a ~a"
+	     (try-emit x ,sub-name)
+	     (try-emit op symbol-literal)
+	     (try-emit x ,sub-name))))
+
+(def-op-expr-rule relation relation-one :?< :?<= :?> :?>=)
+(def-op-expr-rule relation-one relation-two :?= :?/=)
+(def-op-expr-rule relation-two relation-three :<  :<= :> :>=)
+(def-op-expr-rule relation-three shift-expression := :/=)
+(def-op-expr-rule shift-expression sub-shift-expression :sla :sra)
+(def-op-expr-rule sub-shift-expression simple-expression :sll :srl :rol :ror)
+
+(def-funforward-rule logical-expression relation ((cap op (or :and :nand :or :nor :xor :xnor)) x y (cdr z))
+  (joinl #?" $((try-emit op symbol-literal)) "
+	 (list (try-emit x relation)
+	       (try-emit y relation)
+	       (mapcar (lambda (x)
+			 (try-emit x relation))
+		       z))))
+
+(def-emit-rule condition _
+  (try-emit whole expression))
+
+(def-emit-rule expression _
+  (try-emit whole bin-coerce-primary logical-expression))
+
+(def-emit-rule bin-coerce-primary (:?? x)
+  #?"(?? $((try-emit x primary)))")
+

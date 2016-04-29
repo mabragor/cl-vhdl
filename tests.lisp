@@ -2096,5 +2096,13 @@ end pld_init ;")
     (frob "(1 + 2) * 3" '(:* (:+ 1 2) 3))
     ))
 
+(test emit-expression-2
+  (with-emit-frob (cl-vhdl::expression)
+    (frob "1" 1)
+    (frob "1 * 2" '(:* 1 2))
+    (frob "+ 1" '(:+ 1))
+    (frob "(1 + 2) * 3" '(:* (:+ 1 2) 3))
+    ))
+
     
 
