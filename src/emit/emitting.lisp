@@ -438,3 +438,29 @@
 (def-emit-rule bin-coerce-primary (:?? x)
   #?"(?? $((try-emit x primary)))")
 
+;; Let's move on to compound constructs
+
+(def-funforward-rule labeled-sequential-statement sequential-statement (:label label statement)
+  #?"$((try-emit label symbol-literal)): $((try-emit statement sequential-statement))")
+
+(def-emit-rule sequential-statement _
+  ;; TODO : do a logarithmic dispatch here, instead of linear one
+  (try-emit whole
+	    wait-statement assertion-statement report-statement signal-assignment-statement
+	    variable-assignment-statement procedure-call-statement if-statement case-statement
+	    loop-statement next-statement exit-statement return-statement null-statement
+	    triple-dot-statement))
+
+(def-emit-rule wait-statement (:wait (cap on (maybe (:on _)))
+				     (cap until (maybe (:until _)))
+				     (cap for (maybe (:for _))))
+  ;; (format t "I'm here!~%")
+  (format nil "wait~a~a~a;"
+  	  (if on #?" on $((try-emit (cadr on) names))" "")
+  	  (if until #?" until $((try-emit (cadr until) condition))" "")
+  	  (if for #?" for $((try-emit (cadr for) expression))" "")))
+
+(def-emit-rule names _
+  (joinl ", " (mapcar (lambda (x)
+			(try-emit x name))
+		      whole)))

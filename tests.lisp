@@ -2104,5 +2104,11 @@ end pld_init ;")
     (frob "(1 + 2) * 3" '(:* (:+ 1 2) 3))
     ))
 
-    
 
+(test emit-wait
+  (with-emit-frob (cl-vhdl::wait-statement)
+    (frob "wait;" '(:wait))
+    (frob "wait until clk;" '(:wait (:until clk)))
+    (frob "wait on foo, bar until clk;" '(:wait (:on (foo bar)) (:until clk)))
+    (frob "wait on foo, bar until clk for 4 ns;" '(:wait (:on (foo bar)) (:until clk) (:for (4 ns))))))
+  
