@@ -2110,5 +2110,14 @@ end pld_init ;")
     (frob "wait;" '(:wait))
     (frob "wait until clk;" '(:wait (:until clk)))
     (frob "wait on foo, bar until clk;" '(:wait (:on (foo bar)) (:until clk)))
-    (frob "wait on foo, bar until clk for 4 ns;" '(:wait (:on (foo bar)) (:until clk) (:for (4 ns))))))
+    (frob "wait on foo, bar until clk for 4 ns;" '(:wait (:on (foo bar)) (:until clk) (:for (ns 4))))))
   
+(test emit-loop
+  (with-emit-frob (cl-vhdl::loop-statement)
+    (frob #?"loop\nwait until clk;\nnull;\nend loop;" '(:loop (:wait (:until clk))
+							:null))
+    (frob #?"while index > 0 loop\n...\nend loop;" '(:loop (:while (:> cl-vhdl::index 0)) :|...|))
+    (frob #?"for count_value in 0 to 127 loop\nwait for 5 ns;\nend loop;"
+	  '(:loop (:for count-value :in (:to 0 127))
+	    (:wait (:for (ns 5)))))
+    ))

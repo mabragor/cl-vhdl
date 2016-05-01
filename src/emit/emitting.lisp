@@ -3,6 +3,14 @@
 
 (cl-interpol:enable-interpol-syntax)
 
+(defmacro try-opt-emit (thing emit-rule)
+  "Emit with leading space if the thing is non-NIL"
+  `(if ,thing #?" $((try-emit ,thing ,emit-rule))" ""))
+
+(defmacro try-opt-kwd-emit (thing emit-rule)
+  "Like TRY-OPT-EMIT, but for arguments with a keyword"
+  `(if ,thing #?" $((try-emit (car ,thing) symbol-literal)) $((try-emit (cadr ,thing) ,emit-rule))" ""))
+
 ;; OK, let's try to emit *some* VHDL from s-exp and see how far will it go...
 ;; The pattern for if (cond) would look something like
 
@@ -128,7 +136,7 @@
 (def-emit-rule symbol-literal sym_symbolp
   (cl-ppcre:regex-replace-all "-" (string-downcase sym) "_"))
 
-(def-emit-rule physical-literal (n_numberp unit_symbolp)
+(def-emit-rule physical-literal (unit_symbolp n_numberp)
   ;; TODO : somehow remove duplication of guards
   #?"$((try-emit n number-literal)) $((try-emit unit symbol-literal))")
 
@@ -233,7 +241,7 @@
   (try-emit x simple-discrete-range attribute-range subtype-range))
 
 (def-emit-rule simple-discrete-range ((cap dir (or :to :downto)) x y)
-  #?"$((try-emit x simple-expression)) $(dir) $((try-emit y simple-expression))")
+  #?"$((try-emit x simple-expression)) $((try-emit dir symbol-literal)) $((try-emit y simple-expression))")
 
 (def-emit-rule attribute-range x_attribute-name-p
   (try-emit x name))
@@ -412,7 +420,7 @@
      (format nil "~a ~a ~a"
 	     (try-emit x ,sub-name)
 	     (try-emit op symbol-literal)
-	     (try-emit x ,sub-name))))
+	     (try-emit y ,sub-name))))
 
 (def-op-expr-rule relation relation-one :?< :?<= :?> :?>=)
 (def-op-expr-rule relation-one relation-two :?= :?/=)
@@ -456,11 +464,71 @@
 				     (cap for (maybe (:for _))))
   ;; (format t "I'm here!~%")
   (format nil "wait~a~a~a;"
-  	  (if on #?" on $((try-emit (cadr on) names))" "")
-  	  (if until #?" until $((try-emit (cadr until) condition))" "")
-  	  (if for #?" for $((try-emit (cadr for) expression))" "")))
+	  (try-opt-kwd-emit on names)
+	  (try-opt-kwd-emit until condition)
+	  (try-opt-kwd-emit for expression)))
 
 (def-emit-rule names _
   (joinl ", " (mapcar (lambda (x)
 			(try-emit x name))
 		      whole)))
+
+;; There's, apparently, a lot of code-duplication, but I don't know how to fix this
+;; in a uniform way -- yet =)
+(def-emit-rule assertion-statement (:assert condition (cap report (maybe (:report _)))
+					    (cap severity (maybe (:severity _))))
+  (format nil "assert ~a~a~a;"
+	  (try-emit condition condition)
+	  (try-opt-kwd-emit report expression)
+	  (try-opt-kwd-emit severity expression)))
+
+(def-emit-rule report-statement (:report report (cap severity (maybe (:severity _))))
+  (format nil "report ~a~a;"
+	  (try-emit report expression)
+	  (try-opt-kwd-emit severity expression)))
+
+(def-emit-rule triple-dot-statement :|...|
+	       "...")
+
+(def-emit-rule null-statement :null "null;")
+
+(def-emit-rule return-statement (:return (cap return (maybe _)))
+  (format nil "return~a;"
+	  (try-opt-emit return expression)))
+
+(def-emit-rule exit-statement (:exit (cap label (maybe _symbolp)) (cap when (maybe (:when _))))
+  (format nil "exit~a~a;"
+	  (try-opt-emit label symbol-literal)
+	  (try-opt-kwd-emit when condition)))
+
+(def-emit-rule next-statement (:next (cap label (maybe _symbolp)) (cap when (maybe (:when _))))
+  (format nil "next~a~a;"
+	  (try-opt-emit label symbol-literal)
+	  (try-opt-kwd-emit when condition)))
+
+;; TODO : I vaguely remember that VHDL strings can't contain newlines ... look if it's true
+
+(def-emit-rule loop-statement (:loop (cap head (maybe ((or :while :for) (cdr _))))
+				     (cdr rest))
+  (format nil "~aloop~%~{~a~%~}end loop;"
+	  (if head #?"$((try-emit head iteration-head)) " "")
+	  (mapcar (lambda (x)
+		    (try-emit x sequential-statement))
+		  rest)))
+  
+(def-emit-rule iteration-head _
+  (try-emit whole while-head for-head))
+
+(def-emit-rule while-head (:while x)
+  #?"while $((try-emit x condition))")
+(def-emit-rule for-head (:for id :in range)
+  #?"for $((try-emit id identifier)) in $((try-emit range discrete-range))")
+	    
+(defmacro def-notimplemented-emit-rule (name)
+  `(def-emit-rule ,name _ (fail-emit)))
+
+(def-notimplemented-emit-rule signal-assignment-statement)
+(def-notimplemented-emit-rule variable-assignment-statement)
+(def-notimplemented-emit-rule procedure-call-statement)
+(def-notimplemented-emit-rule if-statement)
+(def-notimplemented-emit-rule case-statement)
