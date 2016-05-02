@@ -2061,14 +2061,14 @@ end pld_init ;")
   (is (equal "100500" (try-emit 100500 cl-vhdl::number-literal)))
   (is (equal "foo_bar" (try-emit 'foo-bar cl-vhdl::symbol-literal)))
   (is (equal "foo_bar" (try-emit 'foo-bar cl-vhdl::identifier)))
-  (is (equal "1 deco_meter" (try-emit '(1 deco-meter) cl-vhdl::physical-literal)))
+  (is (equal "1 deco_meter" (try-emit '(deco-meter 1) cl-vhdl::physical-literal)))
   (is (equal "\"roger  \"\"  wilco\"" (try-emit "roger  \"  wilco" cl-vhdl::string-literal)))
   ;; now with vague 'literal' specification
   (is (equal "'a'" (try-emit #\a cl-vhdl::literal)))
   (is (equal "B\"000\"" (try-emit '(:bin "000") cl-vhdl::literal)))
   (is (equal "100500" (try-emit 100500 cl-vhdl::literal)))
   (is (equal "foo_bar" (try-emit 'foo-bar cl-vhdl::literal)))
-  (is (equal "1 deco_meter" (try-emit '(1 deco-meter) cl-vhdl::literal)))
+  (is (equal "1 deco_meter" (try-emit '(deco-meter 1) cl-vhdl::literal)))
   (is (equal "\"roger  \"\"  wilco\"" (try-emit "roger  \"  wilco" cl-vhdl::literal)))
   )
 
@@ -2121,3 +2121,22 @@ end pld_init ;")
 	  '(:loop (:for count-value :in (:to 0 127))
 	    (:wait (:for (ns 5)))))
     ))
+
+(test emit-case
+  (with-emit-frob (cl-vhdl::case-statement)
+    (frob "case func is when pass1 => null;
+null;
+when pass1 => null;
+null;
+when add => null;
+null;
+when subtract => null;
+null;
+end case;"
+	  '(:case func
+	    (pass1 :null :null)
+	    (pass1 :null :null)
+	    (add :null :null)
+	    (subtract :null :null)))
+    ))
+

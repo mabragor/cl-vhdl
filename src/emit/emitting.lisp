@@ -527,8 +527,22 @@
 (defmacro def-notimplemented-emit-rule (name)
   `(def-emit-rule ,name _ (fail-emit)))
 
+(def-emit-rule case-statement ((cap op (or :case? :case)) expr (cdr rest))
+  (format nil "~a ~a is ~{~a~%~}end case;"
+	  (if (eq :case op)
+	      "case"
+	      "case ?")
+	  (try-emit expr expression)
+	  (mapcar (lambda (x)
+		    (format nil "when ~a => ~{~a~^~%~}"
+			    (try-emit (car x) choices)
+			    (mapcar (lambda (y)
+				      (try-emit y sequential-statement))
+				    (cdr x))))
+		  rest)))
+
 (def-notimplemented-emit-rule signal-assignment-statement)
 (def-notimplemented-emit-rule variable-assignment-statement)
 (def-notimplemented-emit-rule procedure-call-statement)
 (def-notimplemented-emit-rule if-statement)
-(def-notimplemented-emit-rule case-statement)
+
