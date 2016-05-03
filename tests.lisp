@@ -2102,6 +2102,7 @@ end pld_init ;")
     (frob "1 * 2" '(:* 1 2))
     (frob "+ 1" '(:+ 1))
     (frob "(1 + 2) * 3" '(:* (:+ 1 2) 3))
+    (frob "a and b" '(:and a b))
     ))
 
 
@@ -2139,4 +2140,42 @@ end case;"
 	    (add :null :null)
 	    (subtract :null :null)))
     ))
+
+(test emit-if
+  (with-emit-frob (cl-vhdl::if-statement)
+    (frob "if a and b then 
+...
+
+
+end if;" '(:cond ((:and a b) :|...|)))
+    (frob "if mode = immediate then 
+null;
+
+else null;
+end if;"
+	  '(:cond ((:= mode immediate) :null)
+	    (t :null)))
+    (frob "if mode = immediate then 
+null;
+elsif opcode = load or opcode = add or opcode = subtract then
+null;
+
+end if;"
+	  '(:cond ((:= mode immediate) :null)
+	    ((:or (:= opcode load) (:= opcode add)
+	      (:= opcode subtract))
+	     :null)))
+    (frob "if mode = immediate then 
+null;
+elsif opcode = load or opcode = add or opcode = subtract then
+null;
+else null;
+end if;"
+	  '(:cond ((:= mode immediate) :null)
+	    ((:or (:= opcode load) (:= opcode add)
+	      (:= opcode subtract))
+	     :null)
+	    (t :null)))
+    ))
+
 

@@ -431,11 +431,11 @@
 
 (def-funforward-rule logical-expression relation ((cap op (or :and :nand :or :nor :xor :xnor)) x y (cdr z))
   (joinl #?" $((try-emit op symbol-literal)) "
-	 (list (try-emit x relation)
-	       (try-emit y relation)
-	       (mapcar (lambda (x)
-			 (try-emit x relation))
-		       z))))
+	 `(,(try-emit x relation)
+	    ,(try-emit y relation)
+	    ,.(mapcar (lambda (x)
+			(try-emit x relation))
+		      z))))
 
 (def-emit-rule condition _
   (try-emit whole expression))
@@ -541,8 +541,31 @@
 				    (cdr x))))
 		  rest)))
 
+(def-emit-rule if-statement (:cond (then-cond (cdr then-forms))
+				   (cap elsifs (collect-until ('t (cdr _))))
+				   (cap else (maybe ('t (cdr _)))))
+  ;; (format t "I'm here~%")
+  (format nil "if ~a then ~%~{~a~%~}~a~%~a~%end if;"
+	  (try-emit then-cond condition)
+	  (mapcar (lambda (x)
+	  	    (try-emit x sequential-statement))
+	  	  then-forms)
+	  (joinl "~%" (mapcar (lambda (elsif-form)
+				(format nil "elsif ~a then~%~a"
+					(try-emit (car elsif-form) condition)
+					(joinl "~%" (mapcar (lambda (x)
+							      (try-emit x sequential-statement))
+							    (cdr elsif-form)))))
+			      elsifs))
+	  (if else
+	      (format nil "else ~a"
+		      (joinl "~%" (mapcar (lambda (x)
+					    (try-emit x sequential-statement))
+					  (cdr else))))
+	      "")))
+
 (def-notimplemented-emit-rule signal-assignment-statement)
 (def-notimplemented-emit-rule variable-assignment-statement)
 (def-notimplemented-emit-rule procedure-call-statement)
-(def-notimplemented-emit-rule if-statement)
+
 
