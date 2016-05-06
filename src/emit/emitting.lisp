@@ -564,8 +564,10 @@
 					  (cdr else))))
 	      "")))
 
+(def-emit-rule procedure-call-statement _
+  #?"$((try-emit whole compound-name));") ;; this should be just (:COMPOUND name ... (:PAREN ...))
+
 (def-notimplemented-emit-rule signal-assignment-statement)
 (def-notimplemented-emit-rule variable-assignment-statement)
-(def-notimplemented-emit-rule procedure-call-statement)
 
 

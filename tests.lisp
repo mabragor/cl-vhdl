@@ -196,9 +196,9 @@
 
 (test simple-variable-assignment
   (with-optima-frob (simple-variable-assignment)
-    (frob (list ::= 'cl-vhdl::program-counter _) "program_counter := 0;")
-    (frob (list ::= 'cl-vhdl::index _) "index := index + 1;")
-    (frob (list ::= 'cl-vhdl::stored-value 'cl-vhdl::data-in) "stored_value := data_in;")
+    (frob (list :setf 'cl-vhdl::program-counter _) "program_counter := 0;")
+    (frob (list :setf 'cl-vhdl::index _) "index := index + 1;")
+    (frob (list :setf 'cl-vhdl::stored-value 'cl-vhdl::data-in) "stored_value := data_in;")
     ))
   
 
@@ -271,11 +271,11 @@
 	  "if cs1 and not cs2 and cs3 then
                ...
            end if;")
-    (frob '(:cond ((:= cl-vhdl::mode cl-vhdl::immediate) (::= cl-vhdl::operand cl-vhdl::immed-operand))
+    (frob '(:cond ((:= cl-vhdl::mode cl-vhdl::immediate) (:setf cl-vhdl::operand cl-vhdl::immed-operand))
 	    ((:or (:= cl-vhdl::opcode cl-vhdl::load) (:= cl-vhdl::opcode cl-vhdl::add)
 	      (:= cl-vhdl::opcode cl-vhdl::subtract))
-	     (::= cl-vhdl::operand cl-vhdl::memory-operand))
-	    (t (::= cl-vhdl::operand cl-vhdl::address-operand)))
+	     (:setf cl-vhdl::operand cl-vhdl::memory-operand))
+	    (t (:setf cl-vhdl::operand cl-vhdl::address-operand)))
 	  "if mode = immediate then
                operand := immed_operand;
            elsif opcode = load or opcode = add or opcode = subtract then
@@ -284,8 +284,8 @@
                operand := address_operand;
            end if;")
     (frob '(:cond ((:= cl-vhdl::opcode cl-vhdl::halt-opcode)
-		   (::= cl-vhdl::pc cl-vhdl::effective-address)
-		   (::= cl-vhdl::executing cl-vhdl::false)
+		   (:setf cl-vhdl::pc cl-vhdl::effective-address)
+		   (:setf cl-vhdl::executing cl-vhdl::false)
 		   (:<= cl-vhdl::halt-indicator (:waveform (cl-vhdl::true)))))
 	  "if opcode = halt_opcode then
                PC := effective_address;
@@ -310,7 +310,7 @@
 (test sequential-statement
   (with-optima-frob (sequential-statement)
     (frob :|...| "...")
-    (frob (list ::= 'cl-vhdl::stored-value 'cl-vhdl::data-in) "stored_value := data_in;")))
+    (frob (list :setf 'cl-vhdl::stored-value 'cl-vhdl::data-in) "stored_value := data_in;")))
 
 (test wait-statement
   (with-optima-frob (wait-statement)
@@ -399,7 +399,7 @@
     
 (test conditional-variable-assignment
   (with-optima-frob (conditional-variable-assignment)
-    (frob '(::= cl-vhdl::result (:when ((:= cl-vhdl::mode cl-vhdl::subtract)
+    (frob '(:setf cl-vhdl::result (:when ((:= cl-vhdl::mode cl-vhdl::subtract)
 					(:- cl-vhdl::a cl-vhdl::b))
 				  (t (:+ cl-vhdl::a cl-vhdl::b))))
 	  "result := a - b when mode = subtract else a + b;")))
@@ -407,10 +407,10 @@
 (test case-statement
   (with-optima-frob (case-statement)
     (frob (list :case 'cl-vhdl::func
-		(list _ (list ::= 'cl-vhdl::result 'cl-vhdl::operand1))
-		(list _ (list ::= 'cl-vhdl::result 'cl-vhdl::operand2))
-		(list _ (list ::= 'cl-vhdl::result (list :+ 'cl-vhdl::operand1 'cl-vhdl::operand2)))
-		(list _ (list ::= 'cl-vhdl::result (list :- 'cl-vhdl::operand1 'cl-vhdl::operand2))))
+		(list _ (list :setf 'cl-vhdl::result 'cl-vhdl::operand1))
+		(list _ (list :setf 'cl-vhdl::result 'cl-vhdl::operand2))
+		(list _ (list :setf 'cl-vhdl::result (list :+ 'cl-vhdl::operand1 'cl-vhdl::operand2)))
+		(list _ (list :setf 'cl-vhdl::result (list :- 'cl-vhdl::operand1 'cl-vhdl::operand2))))
 	  "case func is
                when pass1 =>
                    result := operand1;
@@ -437,7 +437,7 @@
 
 (test selected-variable-assignment
   (with-optima-frob (selected-variable-assignment)
-    (frob (list ::= 'cl-vhdl::result (list :select (list _ 'cl-vhdl::operand1)
+    (frob (list :setf 'cl-vhdl::result (list :select (list _ 'cl-vhdl::operand1)
 					   (list _ 'cl-vhdl::operand2)
 					   (list _ (list :+ 'cl-vhdl::operand1 'cl-vhdl::operand2))
 					   (list _ (list :- 'cl-vhdl::operand1 'cl-vhdl::operand2))))
@@ -454,7 +454,7 @@
 (test loop-statement
   (with-optima-frob (loop-statement)
     (frob (list :loop (list :wait (list :until 'cl-vhdl::clk))
-		(list := 'cl-vhdl::count-value (list :mod _ 16))
+		(list :setf 'cl-vhdl::count-value (list :mod _ 16))
 		_)
 	  "loop
                wait until clk;
@@ -529,7 +529,7 @@
 
 (test simple-variable-assignment-2
   (with-optima-frob (simple-variable-assignment)
-    (frob (list ::= (list :compound 'cl-vhdl::counters
+    (frob (list :setf (list :compound 'cl-vhdl::counters
 			  (list _ 'cl-vhdl::active))
 		(list :+ (list :compound 'cl-vhdl::counters
 			       (list _ 'cl-vhdl::active))
@@ -580,11 +580,11 @@
 (test matching-case
   (with-optima-frob (case-statement)
     (frob '(:case? cl-vhdl::request
-	    ("1---" (:= cl-vhdl::grant "1000"))
-	    ("01--" (:= cl-vhdl::grant "0100"))
-	    ("001-" (:= cl-vhdl::grant "0010"))
-	    ("0001" (:= cl-vhdl::grant "0001"))
-	    (:others (:= cl-vhdl::grant "0000")))
+	    ("1---" (:setf cl-vhdl::grant "1000"))
+	    ("01--" (:setf cl-vhdl::grant "0100"))
+	    ("001-" (:setf cl-vhdl::grant "0010"))
+	    ("0001" (:setf cl-vhdl::grant "0001"))
+	    (:others (:setf cl-vhdl::grant "0000")))
 	  "case? request is
                when \"1---\" => grant := \"1000\";
                when \"01--\" => grant := \"0100\";
@@ -595,7 +595,7 @@
 
 (test matching-select
   (with-optima-frob (selected-variable-assignment)
-    (frob '(::= cl-vhdl::grant (:select? ("1---" "1000")
+    (frob '(:setf cl-vhdl::grant (:select? ("1---" "1000")
 				("01--" "0100")
 				("001-" "0010")
 				("0001" "0001")
@@ -881,13 +881,13 @@
   (with-optima-frob (sequential-statement)
     (frob '(:assert (:> (:compound cl-vhdl::samples (:attribute cl-vhdl::length)) 0) (:severity cl-vhdl::failure))
 	  "assert samples'length > 0 severity failure;")
-    (frob '(::= cl-vhdl::average
+    (frob '(:setf cl-vhdl::average
 	    (:/ cl-vhdl::total
 	     (:compound real (:paren (:compound cl-vhdl::samples (:attribute length))))))
 	  "average := total / real(samples'length);"))
   (with-optima-frob (loop-statement)
     (frob '(:loop (:for cl-vhdl::index :in (:compound cl-vhdl::samples (:attribute cl-vhdl::range)))
-	    (:= cl-vhdl::total
+	    (:setf cl-vhdl::total
 	     (:+ cl-vhdl::total (:compound cl-vhdl::samples (:paren cl-vhdl::index)))))
 	  "for index in samples'range loop
                total := total + samples(index);
@@ -909,8 +909,8 @@
 	    (:assert (:> (:compound cl-vhdl::samples (:attribute length)) 0)
 	     (:severity cl-vhdl::failure))
 	    (:loop (:for cl-vhdl::index :in (:compound cl-vhdl::samples (:attribute cl-vhdl::range)))
-	     (:= cl-vhdl::total (:+ cl-vhdl::total (:compound cl-vhdl::samples (:paren cl-vhdl::index)))))
-	    (:= cl-vhdl::average
+	     (:setf cl-vhdl::total (:+ cl-vhdl::total (:compound cl-vhdl::samples (:paren cl-vhdl::index)))))
+	    (:setf cl-vhdl::average
 	     (:/ cl-vhdl::total
 	      (:compound real (:paren (:compound cl-vhdl::samples (:attribute length)))))))
 	  "procedure average_samples is
@@ -926,8 +926,8 @@
 	    (:parameter (:sig-var-con cl-vhdl::func-code nil :in cl-vhdl::op))
 	    (:variable integer nil cl-vhdl::result)
 	    (:case cl-vhdl::op
-	      (cl-vhdl::add (:= cl-vhdl::result (:+ cl-vhdl::op1 cl-vhdl::op2)))
-	      (cl-vhdl::subtract (:= cl-vhdl::result (:- cl-vhdl::op1 cl-vhdl::op2))))
+	      (cl-vhdl::add (:setf cl-vhdl::result (:+ cl-vhdl::op1 cl-vhdl::op2)))
+	      (cl-vhdl::subtract (:setf cl-vhdl::result (:- cl-vhdl::op1 cl-vhdl::op2))))
 	    (:<= cl-vhdl::dest (:waveform (cl-vhdl::result (:after cl-vhdl::tpd))))
 	    (:<= cl-vhdl::z-flag (:waveform ((:= cl-vhdl::result 0) (:after cl-vhdl::tpd)))))
 	  "procedure do_arith_op ( op : in func_code ) is
@@ -1181,15 +1181,15 @@ end entity mac;"))
 	     (:cond
 	       ((:compound cl-vhdl::rising-edge (:paren cl-vhdl::clk))
 		(:cond
-		  (cl-vhdl::reset (:= sum (:aggregate 0.0 0.0))
-				  (:= cl-vhdl::real-accumulator-ovf cl-vhdl::false)
-				  (:= cl-vhdl::imag-accumulator-ovf cl-vhdl::false))
-		  (t (:= sum (:+ cl-vhdl::product sum))
-		     (:= cl-vhdl::real-accumulator-ovf
+		  (cl-vhdl::reset (:setf sum (:aggregate 0.0 0.0))
+				  (:setf cl-vhdl::real-accumulator-ovf cl-vhdl::false)
+				  (:setf cl-vhdl::imag-accumulator-ovf cl-vhdl::false))
+		  (t (:setf sum (:+ cl-vhdl::product sum))
+		     (:setf cl-vhdl::real-accumulator-ovf
 			 (:or cl-vhdl::real-accumulator-ovf
 			      (:< (:compound sum (:dot cl-vhdl::re)) (:- 16.0))
 			      (:>= (:compound sum (:dot cl-vhdl::re)) (:+ 16.0))))
-		     (:= cl-vhdl::imag-accumulator-ovf
+		     (:setf cl-vhdl::imag-accumulator-ovf
 			 (:or cl-vhdl::imag-accumulator-ovf
 			      (:< (:compound sum (:dot cl-vhdl::im)) (:- 16.0))
 			      (:>= (:compound sum (:dot cl-vhdl::im)) (:+ 16.0))))))
@@ -1203,24 +1203,24 @@ end entity mac;"))
 			       (:>= (:compound sum (:dot cl-vhdl::im)) (:+ 1.0)))
 			  (:waveform (#\1)))
 		       (t (:waveform (#\0)))))
-		(:= (:compound cl-vhdl::product (:dot cl-vhdl::re))
+		(:setf (:compound cl-vhdl::product (:dot cl-vhdl::re))
 		    (:- cl-vhdl::real-part-product-1 cl-vhdl::real-part-product-2))
-		(:= (:compound cl-vhdl::product (:dot cl-vhdl::im))
+		(:setf (:compound cl-vhdl::product (:dot cl-vhdl::im))
 		    (:+ cl-vhdl::imag-part-product-1 cl-vhdl::imag-part-product-2))
-		(:= cl-vhdl::real-part-product-1
+		(:setf cl-vhdl::real-part-product-1
 		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::re))
 			(:compound cl-vhdl::input-y (:dot cl-vhdl::re))))
-		(:= cl-vhdl::real-part-product-2
+		(:setf cl-vhdl::real-part-product-2
 		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::im))
 			(:compound cl-vhdl::input-y (:dot cl-vhdl::im))))
-		(:= cl-vhdl::imag-part-product-1
+		(:setf cl-vhdl::imag-part-product-1
 		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::re))
 			(:compound cl-vhdl::input-y (:dot cl-vhdl::im))))
-		(:= cl-vhdl::imag-part-product-2
+		(:setf cl-vhdl::imag-part-product-2
 		    (:* (:compound cl-vhdl::input-x (:dot cl-vhdl::im))
 			(:compound cl-vhdl::input-y (:dot cl-vhdl::re))))
-		(:= cl-vhdl::input-x cl-vhdl::x-complex)
-		(:= cl-vhdl::input-y cl-vhdl::y-complex)))))
+		(:setf cl-vhdl::input-x cl-vhdl::x-complex)
+		(:setf cl-vhdl::input-y cl-vhdl::y-complex)))))
 	  "
 behavior : process (clk) is
     variable input_x, input_y : complex := (0.0, 0.0);
@@ -1394,8 +1394,8 @@ end architecture behavioral;")))
   (with-optima-frob (subprogram-body)
     (frob '(:procedure cl-vhdl::swap (:generic (:type t))
 	    (:parameter (:sig-var-con t nil :inout cl-vhdl::a cl-vhdl::b))
-	    (:variable t nil cl-vhdl::temp) (:= cl-vhdl::temp cl-vhdl::a)
-	    (:= cl-vhdl::a cl-vhdl::b) (:= cl-vhdl::b cl-vhdl::temp))
+	    (:variable t nil cl-vhdl::temp) (:setf cl-vhdl::temp cl-vhdl::a)
+	    (:setf cl-vhdl::a cl-vhdl::b) (:setf cl-vhdl::b cl-vhdl::temp))
 	  "procedure swap
              generic (type T)
              parameter ( a, b : inout T ) is
@@ -1723,16 +1723,16 @@ end architecture behavioral;")))
     (frob '(:type cl-vhdl::natural-ptr (:access cl-vhdl::natural))
 	  "type natural_ptr is access natural;"))
   (with-optima-frob (simple-variable-assignment)
-    (frob '(::= cl-vhdl::count (:new cl-vhdl::natural))
+    (frob '(:setf cl-vhdl::count (:new cl-vhdl::natural))
 	  "count := new natural;")
-    (frob '(::= (:compound cl-vhdl::count (:dot :all)) 10)
+    (frob '(:setf (:compound cl-vhdl::count (:dot :all)) 10)
 	  "count.all := 10;")
-    (frob '(::= cl-vhdl::count (:new (:qualified (:aggregate 10) cl-vhdl::natural)))
+    (frob '(:setf cl-vhdl::count (:new (:qualified (:aggregate 10) cl-vhdl::natural)))
 	  "count := new natural'(10);")
-    (frob '(::= cl-vhdl::bus-stimulus (:new (:qualified (:aggregate (cl-vhdl::ns 20) (:bin "0011"))
+    (frob '(:setf cl-vhdl::bus-stimulus (:new (:qualified (:aggregate (cl-vhdl::ns 20) (:bin "0011"))
 					     cl-vhdl::stimulus-record)))
 	  "bus_stimulus := new stimulus_record'( 20 ns, B\"0011\" );")
-    (frob '(:= cl-vhdl::activation-times
+    (frob '(:setf cl-vhdl::activation-times
 	    (:new (:qualified (:aggregate (:& (:compound cl-vhdl::activation-times (:dot :all))
 					      (:qualified (:aggregate (cl-vhdl::us 70) (cl-vhdl::us 100))
 							  cl-vhdl::time-array)))

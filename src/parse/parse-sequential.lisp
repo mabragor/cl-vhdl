@@ -112,23 +112,23 @@
    "_| [ label : ] selected-variable-assignment")
   (wrapping-in-label 2nd))
 
+;; I know VHDL originally denotes this with :=, but ::= and := are EQ in Lisp
 (define-ebnf-rule simple-variable-assignment "( name | aggregate ) := expression ;"
-  `(::= ,1st ,3rd))
+  `(:setf ,1st ,3rd))
 
 (define-ebnf-rule conditional-variable-assignment
     "( name | aggregate ) := expression WHEN condition { ELSE expression WHEN condition } [ ELSE expression ] ;"
-  `(:= ,1st (:when (,5th ,3rd)
+  `(:setf ,1st (:when (,5th ,3rd)
 	      ,@(mapcar (lambda (x)
 			  `(,(cadddr x) ,(cadr x)))
 			6th)
 	      ,@(if 7th
 		    `((t ,(cadr 7th)))))))
 
-
 (define-ebnf-rule selected-variable-assignment
   ("WITH expression SELECT [ ? ] ( name | aggregate ) :="
    "{ expression WHEN choices , } expression WHEN choices ;")
-  `(::= ,5th (,(if 4th :select? :select)
+  `(:setf ,5th (,(if 4th :select? :select)
 	       ,@(mapcar (lambda (x)
 			   `(,(caddr x) ,(car x)))
 			 7th)
