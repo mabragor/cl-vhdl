@@ -437,7 +437,7 @@
 
 (test selected-variable-assignment
   (with-optima-frob (selected-variable-assignment)
-    (frob (list :setf 'cl-vhdl::result (list :select (list _ 'cl-vhdl::operand1)
+    (frob (list :setf 'cl-vhdl::result (list :select 'cl-vhdl::func (list _ 'cl-vhdl::operand1)
 					   (list _ 'cl-vhdl::operand2)
 					   (list _ (list :+ 'cl-vhdl::operand1 'cl-vhdl::operand2))
 					   (list _ (list :- 'cl-vhdl::operand1 'cl-vhdl::operand2))))
@@ -595,7 +595,7 @@
 
 (test matching-select
   (with-optima-frob (selected-variable-assignment)
-    (frob '(:setf cl-vhdl::grant (:select? ("1---" "1000")
+    (frob '(:setf cl-vhdl::grant (:select? cl-vhdl::request ("1---" "1000")
 				("01--" "0100")
 				("001-" "0010")
 				("0001" "0001")
@@ -2178,4 +2178,29 @@ end if;"
 	    (t :null)))
     ))
 
-
+(test emit-setf
+  (with-emit-frob (cl-vhdl::variable-assignment-statement)
+    (frob "with request select ? grant :=
+\"1000\" when \"1---\",
+\"0100\" when \"01--\",
+\"0010\" when \"001-\",
+\"0001\" when \"0001\",
+\"0000\" when others;"
+	  '(:setf grant (:select? request ("1---" "1000")
+			 ("01--" "0100")
+			 ("001-" "0010")
+			 ("0001" "0001")
+			 (:others "0000"))))
+    (frob "x := y;" '(:setf x y))
+    (frob "grant := \"0100\" when
+\"01--\"
+else \"0010\" when \"001-\"
+else \"0001\" when \"0001\"
+else \"0000\" when others
+else \"asdf\";"
+	  '(:setf grant (:when ("01--" "0100")
+			  ("001-" "0010")
+			  ("0001" "0001")
+			  (:others "0000")
+			  (t "asdf"))))
+    ))

@@ -128,7 +128,7 @@
 (define-ebnf-rule selected-variable-assignment
   ("WITH expression SELECT [ ? ] ( name | aggregate ) :="
    "{ expression WHEN choices , } expression WHEN choices ;")
-  `(:setf ,5th (,(if 4th :select? :select)
+  `(:setf ,5th (,(if 4th :select? :select) ,2nd
 	       ,@(mapcar (lambda (x)
 			   `(,(caddr x) ,(car x)))
 			 7th)

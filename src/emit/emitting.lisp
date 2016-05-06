@@ -567,7 +567,37 @@
 (def-emit-rule procedure-call-statement _
   #?"$((try-emit whole compound-name));") ;; this should be just (:COMPOUND name ... (:PAREN ...))
 
+(def-emit-rule variable-assignment-statement _
+  (try-emit whole when-variable-assignment select-variable-assignment simple-variable-assignment))
+
+(def-emit-rule when-variable-assignment (:setf x (:when (cond-1 expr-1)
+						   (cap elsifs (collect-until ('t _)))
+						   (cap else (maybe ('t _)))))
+  (format nil "~a := ~a when~%~a~%~a~%~a;"
+	  (try-emit x name aggregate)
+	  (try-emit expr-1 expression)
+	  (try-emit cond-1 condition)
+	  (joinl "~%" (mapcar (lambda (x)
+				#?"else $((try-emit (cadr x) expression)) when $((try-emit (car x) condition))")
+			      elsifs))
+	  (if else
+	      #?"else $((try-emit (cadr else) expression))"
+	      "")))
+
+(def-emit-rule select-variable-assignment (:setf x ((cap op (or :select? :select)) expr
+						    (cdr rest)))
+  (format nil "with ~a select ~a~a :=~%~a;"
+	  (try-emit expr expression)
+	  (if (eq :select? op) "? " "")
+	  (try-emit x name aggregate)
+	  (joinl ",~%" (mapcar (lambda (x)
+				 #?"$((try-emit (cadr x) expression)) when $((try-emit (car x) choices))")
+			       rest))))
+
+(def-emit-rule simple-variable-assignment (:setf x y)
+  #?"$((try-emit x name aggregate)) := $((try-emit y expression));")
+
 (def-notimplemented-emit-rule signal-assignment-statement)
-(def-notimplemented-emit-rule variable-assignment-statement)
+
 
 
