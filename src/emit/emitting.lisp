@@ -169,9 +169,14 @@
 (def-emit-rule new-primary (:new x)
   #?"new $((try-emit x subtype-indication qualified-expression))")
 
+(defparameter *expression* nil)
+
 (def-emit-rule parenthesized-expression x
-  ;; if we are at this stage of emitting expression *necessarily* must be bracketed
-  #?"($((try-emit x expression)))")
+  ;; Do not allow infinite recursion
+  (if (eq *expression* x)
+      (fail-emit)
+      ;; if we are at this stage of emitting expression *necessarily* must be bracketed
+      #?"($((try-emit x expression)))"))
 
 (def-emit-rule typemark-primary x
   ;; TODO : actually implement this -- which I don't know how to do now
@@ -378,7 +383,7 @@
 	  (if sig
 	      (try-emit (cadr sig) signature)
 	      "")
-	  id
+	  (try-emit id symbol-literal)
 	  (if expr
 	      #?"($((try-emit expr expression)))"
 	      "")))
@@ -441,7 +446,8 @@
   (try-emit whole expression))
 
 (def-emit-rule expression _
-  (try-emit whole bin-coerce-primary logical-expression))
+  (let ((*expression* whole))
+    (try-emit whole bin-coerce-primary logical-expression)))
 
 (def-emit-rule bin-coerce-primary (:?? x)
   #?"(?? $((try-emit x primary)))")
@@ -597,7 +603,96 @@
 (def-emit-rule simple-variable-assignment (:setf x y)
   #?"$((try-emit x name aggregate)) := $((try-emit y expression));")
 
-(def-notimplemented-emit-rule signal-assignment-statement)
+(def-emit-rule signal-assignment-statement (:<= (cdr rest))
+  (try-emit rest simple-signal-assignment conditional-signal-assignment selected-signal-assignment))
+
+(def-emit-rule simple-signal-assignment _
+  (try-emit whole
+	    really-simple-signal-assignment
+	    force-simple-signal-assignment
+	    release-simple-signal-assignment))
+
+(def-emit-rule really-simple-signal-assignment (name (cap delay (maybe _delay-mechanism-p)) x)
+  (format nil "~a <= ~a~a;"
+	  (try-emit name name aggregate)
+	  (if delay #?"(try-emit delay delay-mechanism) " "")
+	  (try-emit x waveform)))
+
+(def-emit-rule force-simple-signal-assignment (name x_force-p y)
+  (format nil "~a <= ~a ~a;"
+	  (try-emit name name)
+	  (try-emit x force-statement)
+	  (try-emit y expression)))
+
+(def-emit-rule release-simple-signal-assignment (name (:release (cdr x)))
+  (format nil "~a <= release~a;"
+	  (try-emit name name)
+	  (if x #?" $((try-emit x symbol-literal))" "")))
+
+(defun force-p (x)
+  (match-p (:force (cdr _)) x))
+
+(defun delay-mechanism-p (x)
+  (match-p (or :transport (:inertial (cdr _))) x))
+
+(def-emit-rule force-statement (:force (cdr x))
+  (format nil "force~a"
+	  (if x #?" $((try-emit (car x) symbol-literal))" "")))
+
+(def-emit-rule conditional-signal-assignment (name (cap delay (maybe _delay-mechanism-p))
+						   (cap force (maybe _force-p))
+						   (:when (cond-1 expr-1)
+						     (cap elsifs (collect-until ('t _)))
+						     (cap else (maybe ('t _)))))
+  (format nil " ~a <= ~a~a ~a when ~a~%~a~%~a;"
+	  (try-emit name name aggregate)
+	  (if delay #?"$((try-emit delay delay-mechanism)) " "")
+	  (if force #?"$((try-emit force force-statement)) " "")
+	  (try-emit expr-1 waveform expression)
+	  (try-emit cond-1 condition)
+	  (joinl "~%" (mapcar (lambda (x)
+				(format nil "else ~a when ~a" 
+					(try-emit (cadr x) waveform expression)
+					(try-emit (car x) choices)))
+			      elsifs))
+	  (if else
+	      #?"else $((try-emit (cadr else) waveform expression))"
+	      "")))
+
+(def-emit-rule selected-signal-assignment (name (cap delay (maybe _delay-mechanism-p))
+						(cap force (maybe _force-p))
+						((cap op (or :select? :select))
+						 selector
+						 (cdr clauses)))
+  (format nil "with ~a select~a ~a <= ~a~a~%~a;"
+	  (try-emit selector expression)
+	  (if (eq :select? op) " ?" "")
+	  (try-emit name name aggregate)
+	  (if delay #?"$((try-emit delay delay-mechanism)) " "")
+	  (if force #?"$((try-emit force force-statement)) " "")
+	  (joinl ",~%" (mapcar (lambda (x)
+				 #?"$((try-emit (cadr x) waveform expression)) when $((try-emit (car x) choices))")
+			       clauses))))
+
+
+(def-emit-rule delay-mechanism _
+  (ecase-match whole
+	       (:transport (try-emit whole symbol-literal))
+	       ((:inertial (cdr x)) (format nil "~ainertial"
+					    (if x #?"reject $((try-emit (car x) expression)) " "")))))
 
 
 
+(def-emit-rule waveform (:waveform (cdr rest))
+  (try-emit rest unaffected-waveform usual-waveform))
+
+(def-emit-rule unaffected-waveform (:unaffected)
+  "unaffected")
+
+(def-emit-rule usual-waveform _
+  (joinl ",~%"
+	 (mapcar (lambda (x)
+		   (ecase-match x ((x (:after y)) #?"$((try-emit x expression)) after $((try-emit y expression))")
+				((x) #?"$((try-emit x expression))")))
+		 whole)))
+	    

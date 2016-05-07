@@ -2204,3 +2204,19 @@ else \"asdf\";"
 			  (:others "0000")
 			  (t "asdf"))))
     ))
+
+(test emit-signal-assignments
+  (with-emit-frob (cl-vhdl::signal-assignment-statement)
+    (frob "current_state <= force illegal_state_12;"
+	  '(:<= current-state (:force) illegal-state-12))
+    (frob "current_state <= release;" '(:<= current-state (:release)))
+    (frob "duv_bus <= force out \"ZZZZ\";" '(:<= duv-bus (:force :out) "ZZZZ"))
+    (frob " dut_d_bus <= force in  next_random_stim(dut_d_bus'length) when test_mode = random
+
+else directed_stim(test_count);"
+	  '(:<= dut-d-bus (:force :in) (:when ((:= test-mode random)
+					       (:compound next-random-stim
+							  (:paren (:compound dut-d-bus (:attribute length)))))
+					 (t (:compound directed-stim (:paren test-count))))))
+    ))
+
