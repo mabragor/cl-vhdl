@@ -696,3 +696,22 @@
 				((x) #?"$((try-emit x expression))")))
 		 whole)))
 	    
+
+;;; Emit concurrent statements
+
+(def-emit-rule concurrent-statement _
+  (try-emit whole block-statement process-statement concurrent-procedure-call-statement
+	    concurrent-assertion-statement concurrent-signal-assignment-statement
+	    component-instantiation-statement generate-statement psl-directive triple-dot-statement))
+
+(def-notimplemented-emit-rule psl-directive)
+
+(def-notimplemented-emit-rule block-statement)
+(def-notimplemented-emit-rule process-statement)
+(def-notimplemented-emit-rule concurrent-procedure-call-statement)
+(def-notimplemented-emit-rule concurrent-assertion-statement)
+(def-notimplemented-emit-rule concurrent-signal-assignment-statement)
+(def-notimplemented-emit-rule component-instantiation-statement)
+(def-notimplemented-emit-rule generate-statement)
+
+
