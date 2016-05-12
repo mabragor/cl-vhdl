@@ -56,14 +56,27 @@
 		(cadr x)))
 	  res))
 
-(define-ebnf-rule formal-part
-  ("GENERIC-name | PORT-name | PARAMETER-name | FUNCTION-name (( ( GENERIC-name | PORT-name | PARAMETER-name ) ))"
-   "| type-mark (( ( GENERIC-name | PORT-name | PARAMETER-name ) ))"))
+(define-ebnf-rule formal-part "simple-formal-part | function-formal-part | type-formal-part")
 
-(define-ebnf-rule actual-part
-  ("inertial-part | SIGNAL-name | VARIABLE-name | FILE-name | _subtype-indication"
-   "| _SUBPROGRAM-name | _PACKAGE-name | OPEN | FUNCTION-name (( ( SIGNAL-name | VARIABLE-name ) ))"
-   "| type-mark (( ( SIGNAL-name | VARIABLE-name ) ))"))
+(define-ebnf-rule simple-formal-part "GENERIC-name | PORT-name | PARAMETER-name")
+
+(define-ebnf-rule function-formal-part "FUNCTION-name (( ( GENERIC-name | PORT-name | PARAMETER-name ) ))"
+  `(:fun-part ,1st ,3rd))
+
+(define-ebnf-rule type-formal-part "type-mark (( ( GENERIC-name | PORT-name | PARAMETER-name ) ))"
+  `(:type-part ,1st ,3rd))
+
+(define-ebnf-rule actual-part ("inertial-part | simple-actual-part | _subtype-indication"
+			       "| function-actual-part | type-actual-part"))
+
+(define-ebnf-rule function-actual-part "FUNCTION-name (( ( SIGNAL-name | VARIABLE-name ) ))"
+  `(:fun-part ,1st ,3rd))
+
+(define-ebnf-rule type-actual-part "type-mark (( ( SIGNAL-name | VARIABLE-name ) ))"
+  `(:type-part ,1st ,3rd))
+
+(define-ebnf-rule simple-actual-part
+    "SIGNAL-name | VARIABLE-name | FILE-name | _SUBPROGRAM-name | _PACKAGE-name | OPEN")
 
 ;; (%define-ebnf-rule actual-part
 ;;     (|| (inertial-part) (name :signal) (name :variable) (name :file)

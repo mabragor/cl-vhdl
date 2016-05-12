@@ -2222,6 +2222,11 @@ else directed_stim(test_count);"
 
 (test emit-subprogram-instantiation-declaration
   (with-emit-frob (cl-vhdl::subprogram-instantiation-declaration)
-    (frob "" '(:new-procedure int-swap swap (:=> t integer)))
-    (frob "" '(:new-procedure combine-vec-with-bit combine
+    (frob "procedure int_swap is new swap
+generic map (t => integer);"
+	  '(:new-procedure int-swap swap (:=> t integer)))
+    (frob "procedure combine_vec_with_bit is new combine
+[t, bit]
+generic map (t => bit_vector);"
+	  '(:new-procedure combine-vec-with-bit combine
 	       (:signature (t bit)) (:=> t bit-vector)))))

@@ -236,7 +236,7 @@
 ;; Apparently, [[ and ]] should denote [ and ] in text
 (define-ebnf-rule signature
     "[[ [ type-mark {, ... } ] [ RETURN type-mark ] ]]"
-  `(,@2nd ,@(if 3rd `(,3rd))))
+  `(,@2nd ,@(if 3rd `(,3rd)))) ; this is *with* :RETURN keyword
 
 (define-ebnf-rule external-name
     "<< ( CONSTANT | SIGNAL | VARIABLE ) external-pathname : subtype-indication >>"

@@ -388,6 +388,15 @@
 	      #?"($((try-emit expr expression)))"
 	      "")))
 
+(def-emit-rule signature ((cap types (collect-until (:return _))) (cap ret (maybe (:return _))))
+  (format nil "[~a~a]"
+	  (joinl ", " (mapcar (lambda (x)
+				(try-emit x type-mark))
+			      types))
+	  (if ret
+	      #?" return $((try-emit (cadr ret) type-mark))"
+	      "")))
+
 (def-emit-rule funcall-tail (:paren (cdr lst))
   #?"($((try-emit lst association-list)))")
 
@@ -400,14 +409,20 @@
   (ecase-match whole ((:=> x y) #?"$((try-emit x formal-part)) => $((try-emit y actual-part))")
 	       (_ #?"$((try-emit whole actual-part))")))
 
-(def-emit-rule formal-part x
-  ;; TODO : actually implement this
-  (fail-emit))
+(def-emit-rule formal-part _
+  (ecase-match whole
+	       ((:fun-part x y) #?"$((try-emit x name))($((try-emit y name)))")
+	       ((:type-part x y) #?"$((try-emit x type-mark))($((try-emit y name)))")
+	       (_ (try-emit whole name))))
 
-(def-emit-rule actual-part x
-  ;; TODO : actually implement this
-  (fail-emit))
+(def-emit-rule actual-part _
+  (ecase-match whole
+	       ((:fun-part x y) #?"$((try-emit x name))($((try-emit y name)))")
+	       ((:type-part x y) #?"$((try-emit x type-mark))($((try-emit y name)))")
+	       ((:inertial x) #?"inertial $((try-emit x expression))")
+	       (_ (try-emit whole subtype-indication name expression))))
 
+  
 (def-emit-rule function-call x_function-call-p
   (try-emit x compound-name))
 
@@ -791,7 +806,7 @@
 						     id name
 						     (cap sig (maybe (:signature _)))
 						     (cdr gen-map))
-  (format t "I'm here ~a ~a ~a ~a ~a~%" op id name sig gen-map)
+  ;; (format t "I'm here ~a ~a ~a ~a ~a~%" op id name sig gen-map)
   (format nil "~a ~a is new ~a~a~a;"
 	  (if (eq :new-procedure op)
 	      "procedure"
@@ -799,13 +814,11 @@
 	  (try-emit id identifier)
 	  (try-emit name name)
 	  (if sig
-	      #?" $((try-emit sig signature))"
+	      #?"\n$((try-emit (cadr sig) signature))"
 	      "")
-	  ""))
-
-	  ;; (if gen-map
-	  ;;     #?" generic map ($((try-emit gen-map association-list)))"
-	  ;;     "")))
+	  (if gen-map
+	      #?"\ngeneric map ($((try-emit gen-map association-list)))"
+	      "")))
 
 (def-notimplemented-emit-rule package-declaration)
 (def-notimplemented-emit-rule package-instantiation-declaration)
