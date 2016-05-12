@@ -706,12 +706,71 @@
 
 (def-notimplemented-emit-rule psl-directive)
 
+(def-emit-rule generate-statement _
+  (try-emit whole for-generate if-generate case-generate))
+
+(def-emit-rule for-generate (:generate-for label id range (cdr body))
+  (format nil "~a : for ~a in ~a generate~%~a~%end generate;"
+	  (try-emit label label)
+	  (try-emit id identifier)
+	  (try-emit range discrete-range)
+	  (try-emit body generate-statement-body)))
+
+(def-emit-rule if-generate (:generate-if label 
+
+;; DEF-EMIT-RULE can also generate test predicates (even if not very optimal ones)
+;; -- but I really don't want to double-code
+
+(defun block-declarative-item-p ()
+  (or subprogram-declaration-p
+      subprogram-body-p
+      subprogram-instantiation-declaration-p
+      package-declaration-p
+      package-body-p
+      package-instantiation-declaration-p
+      type-declaration-p
+      subtype-declaration-p
+      constant-declaration-p
+      signal-declaration-p
+      variable-declaration-p
+      file-declaration-p
+      alias-declaration-p
+      component-declaration-p
+      attribute-declaration-p
+      attribute-specification-p
+      configuration-specification-p
+      disconnection-specification-p
+      use-clause-p
+      group-template-declaration-p
+      group-declaration-p
+      property-declaration-p
+      sequence-declaration-p
+      clock-declaration-p))
+
+
+(def-emit-rule generate-statement-body _
+  (let (decl-items rest-items)
+    (iter (for item on whole)
+	  ;; So we really do parse declarative items "with combat" -- trying to emit them aggressively
+	  (handler-case (push (try-emit (car item) block-declarative-item) decl-items)
+	    (emit-error ()
+	      (setf rest-items item)
+	      (terminate))))
+    (format nil "~a~a"
+	    (if decl-items
+		(format nil "~{~a~^~%~} begin" (nreverse decl-items))
+		"")
+	    (joinl "~%" (mapcar (lambda (x)
+				  (try-emit x concurrent-statement))
+				rest-items)))))
+	  
+
 (def-notimplemented-emit-rule block-statement)
 (def-notimplemented-emit-rule process-statement)
 (def-notimplemented-emit-rule concurrent-procedure-call-statement)
 (def-notimplemented-emit-rule concurrent-assertion-statement)
 (def-notimplemented-emit-rule concurrent-signal-assignment-statement)
 (def-notimplemented-emit-rule component-instantiation-statement)
-(def-notimplemented-emit-rule generate-statement)
+
 
 
