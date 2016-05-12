@@ -716,37 +716,10 @@
 	  (try-emit range discrete-range)
 	  (try-emit body generate-statement-body)))
 
-(def-emit-rule if-generate (:generate-if label 
+;; (def-emit-rule if-generate (:generate-if label 
 
 ;; DEF-EMIT-RULE can also generate test predicates (even if not very optimal ones)
 ;; -- but I really don't want to double-code
-
-(defun block-declarative-item-p ()
-  (or subprogram-declaration-p
-      subprogram-body-p
-      subprogram-instantiation-declaration-p
-      package-declaration-p
-      package-body-p
-      package-instantiation-declaration-p
-      type-declaration-p
-      subtype-declaration-p
-      constant-declaration-p
-      signal-declaration-p
-      variable-declaration-p
-      file-declaration-p
-      alias-declaration-p
-      component-declaration-p
-      attribute-declaration-p
-      attribute-specification-p
-      configuration-specification-p
-      disconnection-specification-p
-      use-clause-p
-      group-template-declaration-p
-      group-declaration-p
-      property-declaration-p
-      sequence-declaration-p
-      clock-declaration-p))
-
 
 (def-emit-rule generate-statement-body _
   (let (decl-items rest-items)
@@ -774,3 +747,88 @@
 
 
 
+;;; Declaration items -- we need them before we proceed to concurrent statement
+
+(def-emit-rule package-declaration (:package id (cap gen (maybe (:generic (cdr _))))
+					     (cap gen-map (maybe (:generic-map (cdr _))))
+					     (cdr items))
+  (format nil "package ~a is~%~a~a~a~%end package;"
+	  (try-emit id identifier)
+	  (if gen
+	      #?"generic($((try-emit (cdr gen) interface-list)));~%"
+	      "")
+	  (if gen-map
+	      #?"generic map($((try-emit (cdr gen-map) association-list)));~%"
+	      "")
+	  (joinl "~%" (mapcar (lambda (x)
+				(try-emit x package-declarative-item))
+			      items))))
+
+;; TODO : I can use quick log-time comparisons on CAR elements of some rules first
+;;      : maybe the thing will work fast even linearly, though.
+;;      : This would amount to just changing this macro and tuning DEF-EMIT-RULE slightly
+;;      : (to keep original matching pattern somewhere)
+(defmacro def-alternative-emit-rule (name &rest alternatives)
+  `(def-emit-rule ,name _
+     (try-emit whole ,@alternatives)))
+
+(def-alternative-emit-rule package-declarative-item
+    subprogram-declaration subprogram-instantiation-declaration
+    package-declaration package-instantiation-declaration
+    type-declaration subtype-declaration
+    constant-declaration signal-declaration
+    variable-declaration file-declaration
+    alias-declaration component-declaration
+    attribute-declaration attribute-specification
+    disconnection-specification use-clause
+    group-template-declaration group-declaration
+    property-declaration sequence-declaration)
+
+(def-alternative-emit-rule subprogram-declaration _
+  #?"$((try-emit whole subprogram-specification));")
+
+(def-notimplemented-emit-rule subprogram-instantiation-declaration)
+(def-notimplemented-emit-rule package-declaration)
+(def-notimplemented-emit-rule package-instantiation-declaration)
+(def-notimplemented-emit-rule type-declaration)
+(def-notimplemented-emit-rule subtype-declaration)
+(def-notimplemented-emit-rule constant-declaration)
+(def-notimplemented-emit-rule signal-declaration)
+(def-notimplemented-emit-rule variable-declaration)
+(def-notimplemented-emit-rule file-declaration)
+(def-notimplemented-emit-rule alias-declaration)
+(def-notimplemented-emit-rule component-declaration)
+(def-notimplemented-emit-rule attribute-declaration)
+(def-notimplemented-emit-rule attribute-specification)
+(def-notimplemented-emit-rule disconnection-specification)
+(def-notimplemented-emit-rule use-clause)
+(def-notimplemented-emit-rule group-template-declaration)
+(def-notimplemented-emit-rule group-declaration)
+(def-notimplemented-emit-rule property-declaration)
+(def-notimplemented-emit-rule sequence-declaration)
+
+(defun block-declarative-item-p ()
+  (or subprogram-declaration-p
+      subprogram-body-p
+      subprogram-instantiation-declaration-p
+      package-declaration-p
+      package-body-p
+      package-instantiation-declaration-p
+      type-declaration-p
+      subtype-declaration-p
+      constant-declaration-p
+      signal-declaration-p
+      variable-declaration-p
+      file-declaration-p
+      alias-declaration-p
+      component-declaration-p
+      attribute-declaration-p
+      attribute-specification-p
+      configuration-specification-p
+      disconnection-specification-p
+      use-clause-p
+      group-template-declaration-p
+      group-declaration-p
+      property-declaration-p
+      sequence-declaration-p
+      clock-declaration-p))
