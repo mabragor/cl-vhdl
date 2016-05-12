@@ -396,9 +396,9 @@
 				     (try-emit x association-elt))
 				   lst)))
 
-(def-emit-rule association-elt x
-  (ecase-match x ((:=> x y) #?"$((try-emit x formal-part)) => $((try-emit y actual-part))")
-	       (_ #?"$((try-emit x actual-part))")))
+(def-emit-rule association-elt _
+  (ecase-match whole ((:=> x y) #?"$((try-emit x formal-part)) => $((try-emit y actual-part))")
+	       (_ #?"$((try-emit whole actual-part))")))
 
 (def-emit-rule formal-part x
   ;; TODO : actually implement this
@@ -787,7 +787,26 @@
 (def-alternative-emit-rule subprogram-declaration _
   #?"$((try-emit whole subprogram-specification));")
 
-(def-notimplemented-emit-rule subprogram-instantiation-declaration)
+(def-emit-rule subprogram-instantiation-declaration ((cap op (or :new-procedure :new-function))
+						     id name
+						     (cap sig (maybe (:signature _)))
+						     (cdr gen-map))
+  (format t "I'm here ~a ~a ~a ~a ~a~%" op id name sig gen-map)
+  (format nil "~a ~a is new ~a~a~a;"
+	  (if (eq :new-procedure op)
+	      "procedure"
+	      "function")
+	  (try-emit id identifier)
+	  (try-emit name name)
+	  (if sig
+	      #?" $((try-emit sig signature))"
+	      "")
+	  ""))
+
+	  ;; (if gen-map
+	  ;;     #?" generic map ($((try-emit gen-map association-list)))"
+	  ;;     "")))
+
 (def-notimplemented-emit-rule package-declaration)
 (def-notimplemented-emit-rule package-instantiation-declaration)
 (def-notimplemented-emit-rule type-declaration)

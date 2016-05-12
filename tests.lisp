@@ -2220,3 +2220,8 @@ else directed_stim(test_count);"
 					 (t (:compound directed-stim (:paren test-count))))))
     ))
 
+(test emit-subprogram-instantiation-declaration
+  (with-emit-frob (cl-vhdl::subprogram-instantiation-declaration)
+    (frob "" '(:new-procedure int-swap swap (:=> t integer)))
+    (frob "" '(:new-procedure combine-vec-with-bit combine
+	       (:signature (t bit)) (:=> t bit-vector)))))
