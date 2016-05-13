@@ -2230,3 +2230,10 @@ generic map (t => integer);"
 generic map (t => bit_vector);"
 	  '(:new-procedure combine-vec-with-bit combine
 	       (:signature (t bit)) (:=> t bit-vector)))))
+
+(test emit-package-instantiation-declaration
+  (with-emit-frob (cl-vhdl::package-instantiation-declaration)
+    (frob "package address_stacks is new work.generic_stacks
+generic map(size => 8, element_type => unsigned(23 downto 0));"
+	  '(:new-package address-stacks (:compound work (:dot generic-stacks))
+	    (:=> size 8) (:=> element-type (:compound unsigned (:downto 23 0)))))))

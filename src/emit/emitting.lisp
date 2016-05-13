@@ -820,10 +820,33 @@
 	      #?"\ngeneric map ($((try-emit gen-map association-list)))"
 	      "")))
 
-(def-notimplemented-emit-rule package-declaration)
-(def-notimplemented-emit-rule package-instantiation-declaration)
-(def-notimplemented-emit-rule type-declaration)
-(def-notimplemented-emit-rule subtype-declaration)
+(def-emit-rule package-instantiation-declaration (:new-package id name (cdr assoc-list))
+  (format nil "package ~a is new ~a~a;"
+	  (try-emit id identifier)
+	  (try-emit name name)
+	  (if assoc-list
+	      #?"\ngeneric map($((try-emit assoc-list association-list)))"
+	      "")))
+
+(def-emit-rule type-declaration (:type id (maybe def))
+  (format nil "type ~a~a;"
+	  (try-emit id identifier)
+	  (if def
+	      #?" is $((try-emit def type-definition))"
+	      "")))
+
+(def-alternative-emit-rule type-definition
+    physical-type-definition int-or-float-type-definition
+    array-type-definition record-type-definition
+    access-type-definition file-type-definition
+    protected-type-body protected-type-declaration
+    enumeration-type-definition)
+
+(def-emit-rule subtype-declaration (:subtype id indication)
+  (format nil "subtype ~a is ~a;" (try-emit id identifier) (try-emit indication subtype-indication)))
+
+      
+					     
 (def-notimplemented-emit-rule constant-declaration)
 (def-notimplemented-emit-rule signal-declaration)
 (def-notimplemented-emit-rule variable-declaration)
